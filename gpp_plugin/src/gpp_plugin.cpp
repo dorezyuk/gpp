@@ -68,7 +68,7 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       // will throw if the tags are missing or not convertable to std::string
       const auto type = getStringElement(element, "type");
       const auto name = getStringElement(element, "name");
-      
+
       // will throw if the loading fails
       auto plugin = pluginlib::ClassLoader<_Plugin>::createUniqueInstance(type);
 
