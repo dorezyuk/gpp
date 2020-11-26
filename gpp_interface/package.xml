@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gpp_interface</name>
+  <version>0.0.0</version>
+  <description>The gpp_interface package defines the interfaces for
+  pre and post-planning inside the global_planner_pipeline framework</description>
+
+  <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>costmap_2d</depend>
+  <depend>geometry_msgs</depend>
+
+</package>

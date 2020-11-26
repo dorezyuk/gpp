@@ -1,0 +1,7 @@
+<launch>
+  <!-- launch the test-node -->
+  <test time-limit="10" test-name="array_plugin_manager" pkg="gpp_plugin" type="array_plugin_manager_test">
+    <!-- load the test parameters -->
+    <rosparam file="$(find gpp_plugin)/test/array_plugin_manager.yaml" command="load"/>
+  </test>
+</launch>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gpp_plugin</name>
+  <version>0.0.0</version>
+  <description>The gpp_plugin package</description>
+
+  <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>costmap_2d</depend>
+  <depend>gpp_interface</depend>
+  <depend>mbf_costmap_core</depend>
+  <depend>nav_core</depend>
+  <depend>pluginlib</depend>
+  <depend>xmlrpcpp</depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>global_planner</test_depend>
+
+  <export>
+    <nav_core plugin="${prefix}/plugin.xml"/>
+    <mbf_costmap_core plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>
