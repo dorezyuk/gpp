@@ -4,7 +4,9 @@
 
 using namespace gpp_plugin;
 
-TEST(ArrayPluginManagerTest, Loading) {
+// currently disabled, since global-planner will segfault without calling init
+// see https://github.com/ros-planning/navigation/issues/1026
+TEST(ArrayPluginManagerTest, DISABLED_Loading) {
   // here we check that we can properly load plugins, even if some are invalid
   GlobalPlannerManager manager;
   ros::NodeHandle nh("~");
@@ -35,7 +37,7 @@ TEST(ArrayPluginManagerTest, Missing) {
 }
 
 int
-main(int argc, char **argv) {
+main(int argc, char** argv) {
   ros::init(argc, argv, "array_plugin_manager");
   ros::NodeHandle nh;
   testing::InitGoogleTest(&argc, argv);
