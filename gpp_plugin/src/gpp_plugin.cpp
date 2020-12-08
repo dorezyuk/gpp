@@ -61,8 +61,7 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       ManagerInterface<_Plugin>::plugins_.emplace_back(name, std::move(plugin));
 
       // notify the user
-      GPP_INFO("Successfully loaded " << type << " under the name "
-                                              << name);
+      GPP_INFO("Successfully loaded " << type << " under the name " << name);
     }
     catch (XmlRpcException& ex) {
       GPP_WARN("failed to read the tag: " << ex.getMessage());

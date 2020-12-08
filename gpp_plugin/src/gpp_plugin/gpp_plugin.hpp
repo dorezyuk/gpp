@@ -83,7 +83,7 @@ const std::string PluginDefinition<CostmapPlanner>::base_class = "mbf_costmap_co
  *
  * The class firstly binds the pluginlib::ClassLoader to our PluginDefinition.
  * Secondly it defined our way to load the plugins (namely by returning a unique
- * ptr). This method is declared virtual, so we can load CostmapPlanner 
+ * ptr). This method is declared virtual, so we can load CostmapPlanner
  * under the interface of BaseGlobalPlanners.
  *
  */
