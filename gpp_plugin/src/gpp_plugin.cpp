@@ -18,6 +18,64 @@ constexpr char gpp_name__[] = "[gpp]: ";
 constexpr uint32_t SUCCESS = 0;
 constexpr uint32_t FAILURE = 50;
 
+template <typename _Plugin>
+void
+ArrayPluginManager<_Plugin>::load(const std::string& _resource,
+                                  ros::NodeHandle& _nh) {
+  // we expect that _resource defines an array
+  using namespace XmlRpc;
+  XmlRpcValue raw;
+
+  // load the data from the param server
+  if (!_nh.getParam(_resource, raw)) {
+    GPP_DEBUG("no parameter " << _nh.getNamespace() << "/" << _resource);
+    return;
+  }
+
+  if (raw.getType() != XmlRpcValue::TypeArray) {
+    GPP_WARN("invalid type for " << _resource);
+    return;
+  }
+
+  // will throw if not XmlRpcValue::TypeArray
+  const auto size = raw.size();
+
+  // clear the old data and allocate space
+  ManagerInterface<_Plugin>::plugins_.clear();
+  ManagerInterface<_Plugin>::plugins_.reserve(size);
+
+  // note: size raw.size() returns int
+  for (int ii = 0; ii != size; ++ii) {
+    const auto& element = raw[ii];
+
+    try {
+      // will throw if the tags are missing or not convertable to std::string
+      const auto type = getStringElement(element, "type");
+      const auto name = getStringElement(element, "name");
+
+      // will throw if the loading fails
+      // mind the "this"
+      auto plugin = this->createCustomInstance(type);
+
+      // this should not throw anymore
+      ManagerInterface<_Plugin>::plugins_.emplace_back(name, std::move(plugin));
+
+      // notify the user
+      GPP_INFO("Successfully loaded " << type << " under the name "
+                                              << name);
+    }
+    catch (XmlRpcException& ex) {
+      GPP_WARN("failed to read the tag: " << ex.getMessage());
+    }
+    catch (pluginlib::LibraryLoadException& ex) {
+      GPP_WARN("failed to load the library: " << ex.what());
+    }
+    catch (pluginlib::CreateClassException& ex) {
+      GPP_WARN("failed to create the class: " << ex.what());
+    }
+  }
+}
+
 BaseGlobalPlannerWrapper::BaseGlobalPlannerWrapper(ImplPlanner&& _impl) :
     impl_(std::move(_impl)) {
   // check once so we don't have to check everytime we call makePlan
@@ -55,7 +113,7 @@ pluginlib::UniquePtr<BaseGlobalPlanner>
 CostmapPlannerManager::createCustomInstance(const std::string& _type) {
   // check if this type is know to us
   if (isClassAvailable(_type))
-    return createCustomInstance(_type);
+    return createUniqueInstance(_type);
 
   // delegate the construction to the helper manager
   auto impl_planner = manager_.createCustomInstance(_type);
@@ -93,7 +151,7 @@ initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
 
 void
 initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
-             GlobalPlannerManager& _planner) {
+             CostmapPlannerManager& _planner) {
   // load the plugins
   _planner.load("planning", _nh);
 

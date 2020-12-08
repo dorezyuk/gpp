@@ -16,7 +16,7 @@ TEST(ArrayPluginManagerTest, DISABLED_Loading) {
   EXPECT_EQ(manager.getPlugins().size(), 3);
 }
 
-TEST(CostmapPlannerManagerTest, Loading) {
+TEST(CostmapPlannerManagerTest, DISABLED_Loading) {
   // same as above, but with the CostmapPluginManager
   CostmapPlannerManager manager;
   ros::NodeHandle nh("~");

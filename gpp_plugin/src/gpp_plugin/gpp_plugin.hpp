@@ -206,61 +206,62 @@ template <typename _Plugin>
 struct ArrayPluginManager : public PluginManager<_Plugin>,
                             public ManagerInterface<_Plugin> {
   void
-  load(const std::string& _resource, ros::NodeHandle& _nh) {
-    // we expect that _resource defines an array
-    using namespace XmlRpc;
-    XmlRpcValue raw;
+  load(const std::string& _resource, ros::NodeHandle& _nh);
+  // {
+  //   // we expect that _resource defines an array
+  //   using namespace XmlRpc;
+  //   XmlRpcValue raw;
 
-    // load the data from the param server
-    if (!_nh.getParam(_resource, raw)) {
-      // GPP_DEBUG("no parameter " << _nh.getNamespace() << "/" << _resource);
-      return;
-    }
+  //   // load the data from the param server
+  //   if (!_nh.getParam(_resource, raw)) {
+  //     // GPP_DEBUG("no parameter " << _nh.getNamespace() << "/" <<
+  //     _resource); return;
+  //   }
 
-    if (raw.getType() != XmlRpcValue::TypeArray) {
-      // GPP_WARN("invalid type for " << _resource);
-      return;
-    }
+  //   if (raw.getType() != XmlRpcValue::TypeArray) {
+  //     // GPP_WARN("invalid type for " << _resource);
+  //     return;
+  //   }
 
-    // will throw if not XmlRpcValue::TypeArray
-    const auto size = raw.size();
+  //   // will throw if not XmlRpcValue::TypeArray
+  //   const auto size = raw.size();
 
-    // clear the old data and allocate space
-    ManagerInterface<_Plugin>::plugins_.clear();
-    ManagerInterface<_Plugin>::plugins_.reserve(size);
+  //   // clear the old data and allocate space
+  //   ManagerInterface<_Plugin>::plugins_.clear();
+  //   ManagerInterface<_Plugin>::plugins_.reserve(size);
 
-    // note: size raw.size() returns int
-    for (int ii = 0; ii != size; ++ii) {
-      const auto& element = raw[ii];
+  //   // note: size raw.size() returns int
+  //   for (int ii = 0; ii != size; ++ii) {
+  //     const auto& element = raw[ii];
 
-      try {
-        // will throw if the tags are missing or not convertable to std::string
-        const auto type = getStringElement(element, "type");
-        const auto name = getStringElement(element, "name");
+  //     try {
+  //       // will throw if the tags are missing or not convertable to
+  //       std::string const auto type = getStringElement(element, "type");
+  //       const auto name = getStringElement(element, "name");
 
-        // will throw if the loading fails
-        // mind the "this"
-        auto plugin = this->createCustomInstance(type);
+  //       // will throw if the loading fails
+  //       // mind the "this"
+  //       auto plugin = this->createCustomInstance(type);
 
-        // this should not throw anymore
-        ManagerInterface<_Plugin>::plugins_.emplace_back(name,
-                                                         std::move(plugin));
+  //       // this should not throw anymore
+  //       ManagerInterface<_Plugin>::plugins_.emplace_back(name,
+  //                                                        std::move(plugin));
 
-        // notify the user
-        ROS_INFO_STREAM("Successfully loaded " << type << " under the name "
-                                               << name);
-      }
-      catch (XmlRpcException& ex) {
-        ROS_WARN_STREAM("failed to read the tag: " << ex.getMessage());
-      }
-      catch (pluginlib::LibraryLoadException& ex) {
-        ROS_WARN_STREAM("failed to load the library: " << ex.what());
-      }
-      catch (pluginlib::CreateClassException& ex) {
-        ROS_WARN_STREAM("failed to create the class: " << ex.what());
-      }
-    }
-  }
+  //       // notify the user
+  //       ROS_ERROR_STREAM("Successfully loaded " << type << " under the name "
+  //                                              << name);
+  //     }
+  //     catch (XmlRpcException& ex) {
+  //       ROS_ERROR_STREAM("failed to read the tag: " << ex.getMessage());
+  //     }
+  //     catch (pluginlib::LibraryLoadException& ex) {
+  //       ROS_ERROR_STREAM("failed to load the library: " << ex.what());
+  //     }
+  //     catch (pluginlib::CreateClassException& ex) {
+  //       ROS_ERROR_STREAM("failed to create the class: " << ex.what());
+  //     }
+  //   }
+  // }
 };
 
 // compile time specification of the ArrayPluginManager
@@ -272,13 +273,9 @@ using GlobalPlannerManager = ArrayPluginManager<BaseGlobalPlanner>;
  * @brief Wrappes the CostmapPlaner API into the traditional BaseGlobalPlanner
  * API.
  *
- * adjusted from
- * https://github.com/magazino/move_base_flex/blob/master/mbf_costmap_nav/include/nav_core_wrapper/wrapper_global_planner.h
- *
- * Note:
- * - Since all public available planners use BaseGlobalPlanner API, we treat
- * this as default.
- * - This class owns the implementation.
+ * Implementation is very simpliar to move-base-flex wrapper class.
+ * However, all publicly available planners stick to the BaseGlobalPlanner API,
+ * so we treat it as default.
  */
 struct BaseGlobalPlannerWrapper : public BaseGlobalPlanner {
   // define the interface types
