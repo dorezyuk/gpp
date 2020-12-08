@@ -1,17 +1,17 @@
 # file contains dummy definitions of plugins. we use the planner interface for 
 # testing, but the test would be identical for pre- and post-planning.
 plugins:
-  - {name: planner1, type: carrot_planner/CarrotPlanner} # a valid plugins
-  - {name: planner2, type: carrot_planner/CarrotPlanner} # another one
+  - {name: planner1, type: global_planner/GlobalPlanner} # a valid plugins
+  - {name: planner2, type: global_planner/GlobalPlanner} # another one
   - {name: planner3, type: global_planner/Unknown}       # bad type
   - {name: planner3, type: 1}                            # bad type (no string)
   - {name: planner4, no_type: NoType}                    # no type
-  - {no_name: planner6, type: carrot_planner/CarrotPlanner} # no name
-  - {name: 1,        type: carrot_planner/CarrotPlanner} # no name (no string)
+  - {no_name: planner6, type: global_planner/GlobalPlanner} # no name
+  - {name: 1,        type: global_planner/GlobalPlanner} # no name (no string)
   - {} # empty
   - "not even trying"
   - 1
-  - {name: planner7, type: carrot_planner/CarrotPlanner} # a final valid plugin
+  - {name: planner7, type: global_planner/GlobalPlanner} # a final valid plugin
 
 not_an_array: "really  bad"
 
