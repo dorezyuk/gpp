@@ -125,18 +125,6 @@ protected:
   PluginMap plugins_;
 };
 
-/// @brief helper to get a string element with the tag _tag from _v
-/// @throw XmlRpc::XmlRpcException if the tag is missing
-inline std::string
-getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
-  // we have to check manually, since XmlRpc would just return _tag if its
-  // missing...
-  if (!_v.hasMember(_tag))
-    throw XmlRpc::XmlRpcException(_tag + " not found");
-
-  return static_cast<std::string>(_v[_tag]);
-}
-
 /**
  * @brief Loads an array of plugins.
  *

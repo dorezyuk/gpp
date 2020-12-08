@@ -18,6 +18,18 @@ constexpr char gpp_name__[] = "[gpp]: ";
 constexpr uint32_t SUCCESS = 0;
 constexpr uint32_t FAILURE = 50;
 
+/// @brief helper to get a string element with the tag _tag from _v
+/// @throw XmlRpc::XmlRpcException if the tag is missing
+inline std::string
+getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
+  // we have to check manually, since XmlRpc would just return _tag if its
+  // missing...
+  if (!_v.hasMember(_tag))
+    throw XmlRpc::XmlRpcException(_tag + " not found");
+
+  return static_cast<std::string>(_v[_tag]);
+}
+
 template <typename _Plugin>
 void
 ArrayPluginManager<_Plugin>::load(const std::string& _resource,
