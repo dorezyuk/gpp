@@ -16,6 +16,16 @@ TEST(ArrayPluginManagerTest, DISABLED_Loading) {
   EXPECT_EQ(manager.getPlugins().size(), 3);
 }
 
+TEST(CostmapPlannerManagerTest, DISABLED_Loading) {
+  // same as above, but with the CostmapPluginManager
+  CostmapPlannerManager manager;
+  ros::NodeHandle nh("~");
+  manager.load("plugins", nh);
+
+  // check the size of the array
+  EXPECT_EQ(manager.getPlugins().size(), 3);
+}
+
 TEST(ArrayPluginManagerTest, NotAnArray) {
   // here we check that we survive really bad user configs
   GlobalPlannerManager manager;

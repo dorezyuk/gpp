@@ -63,6 +63,13 @@ const std::string PluginDefinition<BaseGlobalPlanner>::package = "nav_core";
 template <>
 const std::string PluginDefinition<BaseGlobalPlanner>::base_class = "nav_core::BaseGlobalPlanner";
 
+// mbf-costmap-core specialization
+template <>
+const std::string PluginDefinition<CostmapPlanner>::package = "mbf_costmap_core";
+
+template <>
+const std::string PluginDefinition<CostmapPlanner>::base_class = "mbf_costmap_core::CostmapPlanner";
+
 // clang-format on
 
 // below the plugin loading machinery. the implementation is moved into cpp,
@@ -73,13 +80,26 @@ const std::string PluginDefinition<BaseGlobalPlanner>::base_class = "nav_core::B
  *
  * @tparam _Plugin Plugin-type. You need to provide a specialization of
  * the PluginDefinition for the _Plugin for this to work.
+ *
+ * The class firstly binds the pluginlib::ClassLoader to our PluginDefinition.
+ * Secondly it defined our way to load the plugins (namely by returning a unique
+ * ptr). This method is declared virtual, so we can load CostmapPlanner
+ * under the interface of BaseGlobalPlanners.
+ *
  */
 template <typename _Plugin>
 struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
   // the defintion with compile-time package and base_class tags
   using Definition = PluginDefinition<_Plugin>;
+  using Base = pluginlib::ClassLoader<_Plugin>;
 
-  PluginManager();
+  // this will get you a linker error, if you try to load unknown plugins
+  PluginManager() : Base(Definition::package, Definition::base_class) {}
+
+  virtual pluginlib::UniquePtr<_Plugin>
+  createCustomInstance(const std::string& _type) {
+    return Base::createUniqueInstance(_type);
+  }
 };
 
 /**
@@ -183,6 +203,58 @@ using PostPlanningManager = ArrayPluginManager<PostPlanningInterface>;
 using GlobalPlannerManager = ArrayPluginManager<BaseGlobalPlanner>;
 
 /**
+ * @brief Wrappes the CostmapPlaner API into the traditional BaseGlobalPlanner
+ * API.
+ *
+ * Implementation is very simpliar to move-base-flex wrapper class.
+ * However, all publicly available planners stick to the BaseGlobalPlanner API,
+ * so we treat it as default.
+ */
+struct BaseGlobalPlannerWrapper : public BaseGlobalPlanner {
+  // define the interface types
+  using Pose = geometry_msgs::PoseStamped;
+  using Path = std::vector<Pose>;
+  using Map = costmap_2d::Costmap2DROS;
+  using ImplPlanner = pluginlib::UniquePtr<CostmapPlanner>;
+
+  /// @brief our c'tor
+  /// @param _impl a valid instance of the CostmapPlanner, which we will own
+  /// @throw std::invalid_argument, if _impl is nullptr
+  explicit BaseGlobalPlannerWrapper(ImplPlanner&& _impl);
+
+  bool
+  makePlan(const Pose& start, const Pose& goal, Path& plan) override;
+
+  bool
+  makePlan(const Pose& start, const Pose& goal, Path& plan,
+           double& cost) override;
+
+  void
+  initialize(std::string name, Map* costmap_ros) override;
+
+private:
+  ImplPlanner impl_;
+};
+
+/**
+ * @brief Loads either CostmapPlanner or BaseGlobalPlanner plugins under a
+ * uniform interface.
+ *
+ * The usage is equivalent to the ArrayPluginManager, but you can pass
+ * plugins derived form CostmapPLanner or BaseGlobalPlanner to it.
+ */
+struct CostmapPlannerManager : public GlobalPlannerManager {
+  ~CostmapPlannerManager();
+
+  // dont call this yourself
+  pluginlib::UniquePtr<BaseGlobalPlanner>
+  createCustomInstance(const std::string& _type) override;
+
+private:
+  PluginManager<CostmapPlanner> manager_;
+};
+
+/**
  * @brief Combine pre-planning, planning and post-planning to customize the
  * your path.
  *
@@ -273,7 +345,7 @@ private:
 
   PrePlanningManager pre_planning_;
   PostPlanningManager post_planning_;
-  GlobalPlannerManager global_planning_;
+  CostmapPlannerManager global_planning_;
 };
 
 }  // namespace gpp_plugin
