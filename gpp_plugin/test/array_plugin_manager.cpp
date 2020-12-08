@@ -5,9 +5,33 @@
 using namespace gpp_plugin;
 
 TEST(ArrayPluginManagerTest, Loading) {
+  // here we check that we can properly load plugins, even if some are invalid
   GlobalPlannerManager manager;
   ros::NodeHandle nh("~");
   manager.load("plugins", nh);
+
+  // check the size of the array
+  EXPECT_EQ(manager.getPlugins().size(), 3);
+}
+
+TEST(ArrayPluginManagerTest, NotAnArray) {
+  // here we check that we survive really bad user configs
+  GlobalPlannerManager manager;
+  ros::NodeHandle nh("~");
+  manager.load("not_an_array", nh);
+
+  // nothing to load here
+  EXPECT_TRUE(manager.getPlugins().empty());
+}
+
+TEST(ArrayPluginManagerTest, Missing) {
+  // here we check that we survive if the user forgets to define the parameter
+  GlobalPlannerManager manager;
+  ros::NodeHandle nh("~");
+  manager.load("missing", nh);
+
+  // nothing to load here
+  EXPECT_TRUE(manager.getPlugins().empty());
 }
 
 int
