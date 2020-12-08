@@ -63,6 +63,13 @@ const std::string PluginDefinition<BaseGlobalPlanner>::package = "nav_core";
 template <>
 const std::string PluginDefinition<BaseGlobalPlanner>::base_class = "nav_core::BaseGlobalPlanner";
 
+// mbf-costmap-core specialization
+template <>
+const std::string PluginDefinition<CostmapPlanner>::package = "mbf_costmap_core";
+
+template <>
+const std::string PluginDefinition<CostmapPlanner>::base_class = "mbf_costmap_core::CostmapPlanner";
+
 // clang-format on
 
 // below the plugin loading machinery. the implementation is moved into cpp,
@@ -73,13 +80,26 @@ const std::string PluginDefinition<BaseGlobalPlanner>::base_class = "nav_core::B
  *
  * @tparam _Plugin Plugin-type. You need to provide a specialization of
  * the PluginDefinition for the _Plugin for this to work.
+ *
+ * The class firstly binds the pluginlib::ClassLoader to our PluginDefinition.
+ * Secondly it defined our way to load the plugins (namely by returning a unique
+ * ptr). This method is declared virtual, so we can load BaseGlobalPlanners
+ * under the interface of CostmapPlanner.
+ *
  */
 template <typename _Plugin>
 struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
   // the defintion with compile-time package and base_class tags
   using Definition = PluginDefinition<_Plugin>;
+  using Base = pluginlib::ClassLoader<_Plugin>;
 
-  PluginManager();
+  // this will get you a linker error, if you try to load unknown plugins
+  PluginManager() : Base(Definition::package, Definition::base_class) {}
+
+  virtual pluginlib::UniquePtr<_Plugin>
+  createCustomInstance(const std::string& _type) {
+    return Base::createUniqueInstance(_type);
+  }
 };
 
 /**
@@ -104,6 +124,18 @@ struct ManagerInterface {
 protected:
   PluginMap plugins_;
 };
+
+/// @brief helper to get a string element with the tag _tag from _v
+/// @throw XmlRpc::XmlRpcException if the tag is missing
+inline std::string
+getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
+  // we have to check manually, since XmlRpc would just return _tag if its
+  // missing...
+  if (!_v.hasMember(_tag))
+    throw XmlRpc::XmlRpcException(_tag + " not found");
+
+  return static_cast<std::string>(_v[_tag]);
+}
 
 /**
  * @brief Loads an array of plugins.
@@ -174,13 +206,124 @@ template <typename _Plugin>
 struct ArrayPluginManager : public PluginManager<_Plugin>,
                             public ManagerInterface<_Plugin> {
   void
-  load(const std::string& _resource, ros::NodeHandle& _nh);
+  load(const std::string& _resource, ros::NodeHandle& _nh) {
+    // we expect that _resource defines an array
+    using namespace XmlRpc;
+    XmlRpcValue raw;
+
+    // load the data from the param server
+    if (!_nh.getParam(_resource, raw)) {
+      // GPP_DEBUG("no parameter " << _nh.getNamespace() << "/" << _resource);
+      return;
+    }
+
+    if (raw.getType() != XmlRpcValue::TypeArray) {
+      // GPP_WARN("invalid type for " << _resource);
+      return;
+    }
+
+    // will throw if not XmlRpcValue::TypeArray
+    const auto size = raw.size();
+
+    // clear the old data and allocate space
+    ManagerInterface<_Plugin>::plugins_.clear();
+    ManagerInterface<_Plugin>::plugins_.reserve(size);
+
+    // note: size raw.size() returns int
+    for (int ii = 0; ii != size; ++ii) {
+      const auto& element = raw[ii];
+
+      try {
+        // will throw if the tags are missing or not convertable to std::string
+        const auto type = getStringElement(element, "type");
+        const auto name = getStringElement(element, "name");
+
+        // will throw if the loading fails
+        // mind the "this"
+        auto plugin = this->createCustomInstance(type);
+
+        // this should not throw anymore
+        ManagerInterface<_Plugin>::plugins_.emplace_back(name,
+                                                         std::move(plugin));
+
+        // notify the user
+        ROS_INFO_STREAM("Successfully loaded " << type << " under the name " <<
+        name);
+      }
+      catch (XmlRpcException& ex) {
+        ROS_WARN_STREAM("failed to read the tag: " << ex.getMessage());
+      }
+      catch (pluginlib::LibraryLoadException& ex) {
+        ROS_WARN_STREAM("failed to load the library: " << ex.what());
+      }
+      catch (pluginlib::CreateClassException& ex) {
+        ROS_WARN_STREAM("failed to create the class: " << ex.what());
+      }
+    }
+  }
 };
 
 // compile time specification of the ArrayPluginManager
 using PrePlanningManager = ArrayPluginManager<PrePlanningInterface>;
 using PostPlanningManager = ArrayPluginManager<PostPlanningInterface>;
 using GlobalPlannerManager = ArrayPluginManager<BaseGlobalPlanner>;
+using _CostmapPlannerManager = ArrayPluginManager<CostmapPlanner>;
+
+/**
+ * @brief Wrappes the traditional BaseGlobalPlanner API into move_base_flex's
+ * CostmapPlaner.
+ *
+ * adjusted from
+ * https://github.com/magazino/move_base_flex/blob/master/mbf_costmap_nav/include/nav_core_wrapper/wrapper_global_planner.h
+ *
+ * Note:
+ * - This class owns the implementation.
+ * - cancel() is not supported and will always return false.
+ */
+struct BaseGlobalPlannerWrapper : public CostmapPlanner {
+  // define the interface types
+  using Pose = geometry_msgs::PoseStamped;
+  using Path = std::vector<Pose>;
+  using Map = costmap_2d::Costmap2DROS;
+  using ImplPlanner = pluginlib::UniquePtr<BaseGlobalPlanner>;
+
+  /// @brief our c'tor
+  /// @param _impl a valid instance of the BaseGlobalPlanner, which we will own
+  /// @throw std::invalid_argument, if _impl is nullptr
+  explicit BaseGlobalPlannerWrapper(ImplPlanner&& _impl);
+
+  uint32_t
+  makePlan(const Pose& start, const Pose& goal, double tolerance, Path& plan,
+           double& cost, std::string& message) override;
+
+  /// @brief will always return false
+  bool
+  cancel() override;
+
+  void
+  initialize(std::string name, Map* costmap_ros) override;
+
+private:
+  ImplPlanner impl_;
+};
+
+/**
+ * @brief Loads either CostmapPlanner or BaseGlobalPlanner plugins under a
+ * uniform interface.
+ *
+ * The usage is equivalent to the ArrayPluginManager, but you can pass
+ * plugins derived form CostmapPLanner or BaseGlobalPlanner to it.
+ */
+struct CostmapPlannerManager : public _CostmapPlannerManager {
+  ~CostmapPlannerManager();
+
+  // dont call this yourself
+  pluginlib::UniquePtr<CostmapPlanner>
+  createCustomInstance(const std::string& _type) override;
+
+private:
+  PluginManager<BaseGlobalPlanner> manager_;
+};
 
 /**
  * @brief Combine pre-planning, planning and post-planning to customize the
@@ -274,6 +417,7 @@ private:
   PrePlanningManager pre_planning_;
   PostPlanningManager post_planning_;
   GlobalPlannerManager global_planning_;
+  _CostmapPlannerManager costmap_planner_;
 };
 
 }  // namespace gpp_plugin

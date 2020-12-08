@@ -18,76 +18,50 @@ constexpr char gpp_name__[] = "[gpp]: ";
 constexpr uint32_t SUCCESS = 0;
 constexpr uint32_t FAILURE = 50;
 
-inline std::string
-getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
-  // we have to check manually, since XmlRpc would just return _tag if its
-  // missing...
-  if (!_v.hasMember(_tag))
-    throw XmlRpc::XmlRpcException(_tag + " not found");
-
-  return static_cast<std::string>(_v[_tag]);
+BaseGlobalPlannerWrapper::BaseGlobalPlannerWrapper(ImplPlanner&& _impl) :
+    impl_(std::move(_impl)) {
+  // check once so we don't have to check everytime we call makePlan
+  if (!impl_)
+    throw std::invalid_argument("nullptr is not supported");
 }
 
-// this will get you a linker error, if you try to load unknown plugins
-template <typename _Plugin>
-PluginManager<_Plugin>::PluginManager() :
-    pluginlib::ClassLoader<_Plugin>(Definition::package,
-                                    Definition::base_class) {}
+uint32_t
+BaseGlobalPlannerWrapper::makePlan(const Pose& start, const Pose& goal,
+                                   double tolerance, Path& plan, double& cost,
+                                   std::string& message) {
+  return impl_->makePlan(start, goal, plan, cost) ? SUCCESS : FAILURE;
+}
 
-template <typename _Plugin>
+bool
+BaseGlobalPlannerWrapper::cancel() {
+  return false;
+}
+
 void
-ArrayPluginManager<_Plugin>::load(const std::string& _resource,
-                                  ros::NodeHandle& _nh) {
-  // we expect that _resource defines an array
-  using namespace XmlRpc;
-  XmlRpcValue raw;
+BaseGlobalPlannerWrapper::initialize(std::string _name, Map* _map) {
+  impl_->initialize(_name, _map);
+}
 
-  // load the data from the param server
-  if (!_nh.getParam(_resource, raw)) {
-    GPP_DEBUG("no parameter " << _nh.getNamespace() << "/" << _resource);
-    return;
-  }
+CostmapPlannerManager::~CostmapPlannerManager() { plugins_.clear(); }
 
-  if (raw.getType() != XmlRpcValue::TypeArray) {
-    GPP_WARN("invalid type for " << _resource);
-    return;
-  }
+inline void
+default_deleter(CostmapPlanner* impl) {
+  delete impl;
+}
 
-  // will throw if not XmlRpcValue::TypeArray
-  const auto size = raw.size();
+pluginlib::UniquePtr<CostmapPlanner>
+CostmapPlannerManager::createCustomInstance(const std::string& _type) {
+  // check if this type is know to us
+  if (isClassAvailable(_type))
+    return createCustomInstance(_type);
 
-  // clear the old data and allocate space
-  ManagerInterface<_Plugin>::plugins_.clear();
-  // ManagerInterface<_Plugin>::plugins_.reserve(size);
-
-  // note: size raw.size() returns int
-  for (int ii = 0; ii != size; ++ii) {
-    const auto& element = raw[ii];
-
-    try {
-      // will throw if the tags are missing or not convertable to std::string
-      const auto type = getStringElement(element, "type");
-      const auto name = getStringElement(element, "name");
-
-      // will throw if the loading fails
-      auto plugin = pluginlib::ClassLoader<_Plugin>::createUniqueInstance(type);
-
-      // this should not throw anymore
-      ManagerInterface<_Plugin>::plugins_.emplace_back(name, std::move(plugin));
-
-      // notify the user
-      GPP_INFO("Successfully loaded " << type << " under the name " << name);
-    }
-    catch (XmlRpcException& ex) {
-      GPP_WARN("failed to read the tag: " << ex.getMessage());
-    }
-    catch (pluginlib::LibraryLoadException& ex) {
-      GPP_WARN("failed to load the library: " << ex.what());
-    }
-    catch (pluginlib::CreateClassException& ex) {
-      GPP_WARN("failed to create the class: " << ex.what());
-    }
-  }
+  // delegate the construction to the helper manager
+  auto impl_planner = manager_.createCustomInstance(_type);
+  // according to the pluginlib::UniquePtr, we have to privide a deleter
+  // function. here, we just pass a default-deleter, since its not bound to
+  // the class-loader
+  return pluginlib::UniquePtr<CostmapPlanner>{
+      new BaseGlobalPlannerWrapper(std::move(impl_planner)), default_deleter};
 }
 
 void
