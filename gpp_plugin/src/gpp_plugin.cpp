@@ -25,16 +25,18 @@ BaseGlobalPlannerWrapper::BaseGlobalPlannerWrapper(ImplPlanner&& _impl) :
     throw std::invalid_argument("nullptr is not supported");
 }
 
-uint32_t
+bool
 BaseGlobalPlannerWrapper::makePlan(const Pose& start, const Pose& goal,
-                                   double tolerance, Path& plan, double& cost,
-                                   std::string& message) {
-  return impl_->makePlan(start, goal, plan, cost) ? SUCCESS : FAILURE;
+                                   Path& plan) {
+  double cost;
+  return makePlan(start, goal, plan, cost);
 }
 
 bool
-BaseGlobalPlannerWrapper::cancel() {
-  return false;
+BaseGlobalPlannerWrapper::makePlan(const Pose& start, const Pose& goal,
+                                   Path& plan, double& cost) {
+  std::string message;
+  return impl_->makePlan(start, goal, 0, plan, cost, message) == SUCCESS;
 }
 
 void
@@ -45,11 +47,11 @@ BaseGlobalPlannerWrapper::initialize(std::string _name, Map* _map) {
 CostmapPlannerManager::~CostmapPlannerManager() { plugins_.clear(); }
 
 inline void
-default_deleter(CostmapPlanner* impl) {
+default_deleter(BaseGlobalPlanner* impl) {
   delete impl;
 }
 
-pluginlib::UniquePtr<CostmapPlanner>
+pluginlib::UniquePtr<BaseGlobalPlanner>
 CostmapPlannerManager::createCustomInstance(const std::string& _type) {
   // check if this type is know to us
   if (isClassAvailable(_type))
@@ -60,7 +62,7 @@ CostmapPlannerManager::createCustomInstance(const std::string& _type) {
   // according to the pluginlib::UniquePtr, we have to privide a deleter
   // function. here, we just pass a default-deleter, since its not bound to
   // the class-loader
-  return pluginlib::UniquePtr<CostmapPlanner>{
+  return pluginlib::UniquePtr<BaseGlobalPlanner>{
       new BaseGlobalPlannerWrapper(std::move(impl_planner)), default_deleter};
 }
 

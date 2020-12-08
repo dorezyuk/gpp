@@ -247,8 +247,8 @@ struct ArrayPluginManager : public PluginManager<_Plugin>,
                                                          std::move(plugin));
 
         // notify the user
-        ROS_INFO_STREAM("Successfully loaded " << type << " under the name " <<
-        name);
+        ROS_INFO_STREAM("Successfully loaded " << type << " under the name "
+                                               << name);
       }
       catch (XmlRpcException& ex) {
         ROS_WARN_STREAM("failed to read the tag: " << ex.getMessage());
@@ -267,38 +267,37 @@ struct ArrayPluginManager : public PluginManager<_Plugin>,
 using PrePlanningManager = ArrayPluginManager<PrePlanningInterface>;
 using PostPlanningManager = ArrayPluginManager<PostPlanningInterface>;
 using GlobalPlannerManager = ArrayPluginManager<BaseGlobalPlanner>;
-using _CostmapPlannerManager = ArrayPluginManager<CostmapPlanner>;
 
 /**
- * @brief Wrappes the traditional BaseGlobalPlanner API into move_base_flex's
- * CostmapPlaner.
+ * @brief Wrappes the CostmapPlaner API into the traditional BaseGlobalPlanner
+ * API.
  *
  * adjusted from
  * https://github.com/magazino/move_base_flex/blob/master/mbf_costmap_nav/include/nav_core_wrapper/wrapper_global_planner.h
  *
  * Note:
+ * - Since all public available planners use BaseGlobalPlanner API, we treat
+ * this as default.
  * - This class owns the implementation.
- * - cancel() is not supported and will always return false.
  */
-struct BaseGlobalPlannerWrapper : public CostmapPlanner {
+struct BaseGlobalPlannerWrapper : public BaseGlobalPlanner {
   // define the interface types
   using Pose = geometry_msgs::PoseStamped;
   using Path = std::vector<Pose>;
   using Map = costmap_2d::Costmap2DROS;
-  using ImplPlanner = pluginlib::UniquePtr<BaseGlobalPlanner>;
+  using ImplPlanner = pluginlib::UniquePtr<CostmapPlanner>;
 
   /// @brief our c'tor
-  /// @param _impl a valid instance of the BaseGlobalPlanner, which we will own
+  /// @param _impl a valid instance of the CostmapPlanner, which we will own
   /// @throw std::invalid_argument, if _impl is nullptr
   explicit BaseGlobalPlannerWrapper(ImplPlanner&& _impl);
 
-  uint32_t
-  makePlan(const Pose& start, const Pose& goal, double tolerance, Path& plan,
-           double& cost, std::string& message) override;
-
-  /// @brief will always return false
   bool
-  cancel() override;
+  makePlan(const Pose& start, const Pose& goal, Path& plan) override;
+
+  bool
+  makePlan(const Pose& start, const Pose& goal, Path& plan,
+           double& cost) override;
 
   void
   initialize(std::string name, Map* costmap_ros) override;
@@ -314,15 +313,15 @@ private:
  * The usage is equivalent to the ArrayPluginManager, but you can pass
  * plugins derived form CostmapPLanner or BaseGlobalPlanner to it.
  */
-struct CostmapPlannerManager : public _CostmapPlannerManager {
+struct CostmapPlannerManager : public GlobalPlannerManager {
   ~CostmapPlannerManager();
 
   // dont call this yourself
-  pluginlib::UniquePtr<CostmapPlanner>
+  pluginlib::UniquePtr<BaseGlobalPlanner>
   createCustomInstance(const std::string& _type) override;
 
 private:
-  PluginManager<BaseGlobalPlanner> manager_;
+  PluginManager<CostmapPlanner> manager_;
 };
 
 /**
@@ -416,8 +415,7 @@ private:
 
   PrePlanningManager pre_planning_;
   PostPlanningManager post_planning_;
-  GlobalPlannerManager global_planning_;
-  _CostmapPlannerManager costmap_planner_;
+  CostmapPlannerManager global_planning_;
 };
 
 }  // namespace gpp_plugin
