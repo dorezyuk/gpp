@@ -14,14 +14,14 @@ constexpr char gpp_name__[] = "[gpp]: ";
 #define GPP_ERROR(_msg) ROS_ERROR_STREAM(gpp_name__ << _msg)
 #define GPP_FATAL(_msg) ROS_FATAL_STREAM(gpp_name__ << _msg)
 
-// outcome definition and checks
+// outcome definition for mbf_core based plugins
 constexpr uint32_t SUCCESS = 0;
 constexpr uint32_t FAILURE = 50;
 
 /// @brief helper to get a string element with the tag _tag from _v
 /// @throw XmlRpc::XmlRpcException if the tag is missing
 inline std::string
-getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
+_getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
   // we have to check manually, since XmlRpc would just return _tag if its
   // missing...
   if (!_v.hasMember(_tag))
@@ -62,8 +62,8 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
 
     try {
       // will throw if the tags are missing or not convertable to std::string
-      const auto type = getStringElement(element, "type");
-      const auto name = getStringElement(element, "name");
+      const auto type = _getStringElement(element, "type");
+      const auto name = _getStringElement(element, "name");
 
       // will throw if the loading fails
       // mind the "this"
@@ -116,7 +116,7 @@ BaseGlobalPlannerWrapper::initialize(std::string _name, Map* _map) {
 CostmapPlannerManager::~CostmapPlannerManager() { plugins_.clear(); }
 
 inline void
-default_deleter(BaseGlobalPlanner* impl) {
+_default_deleter(BaseGlobalPlanner* impl) {
   delete impl;
 }
 
@@ -132,11 +132,11 @@ CostmapPlannerManager::createCustomInstance(const std::string& _type) {
   // function. here, we just pass a default-deleter, since its not bound to
   // the class-loader
   return pluginlib::UniquePtr<BaseGlobalPlanner>{
-      new BaseGlobalPlannerWrapper(std::move(impl_planner)), default_deleter};
+      new BaseGlobalPlannerWrapper(std::move(impl_planner)), _default_deleter};
 }
 
 void
-initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
+_initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
   // load the plugins
   _pre.load("pre_planning", _nh);
 
@@ -149,8 +149,8 @@ initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
 using costmap_2d::Costmap2DROS;
 
 void
-initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
-                 PostPlanningManager& _post) {
+_initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
+                  PostPlanningManager& _post) {
   // load the plugins
   _post.load("post_planning", _nh);
 
@@ -161,8 +161,8 @@ initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
 }
 
 void
-initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
-             CostmapPlannerManager& _planner) {
+_initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
+              CostmapPlannerManager& _planner) {
   // load the plugins
   _planner.load("planning", _nh);
 
@@ -182,50 +182,9 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
   tolerance_ = nh.param("tolerance", 0.1);
 
   // load the plugins from the param-server
-  initPrePlanning(nh, pre_planning_);
-  initPostPlanning(nh, costmap_, post_planning_);
-  initPlanning(nh, costmap_, global_planning_);
-}
-
-bool
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                Path& _plan) {
-  double cost;
-  return makePlan(_start, _goal, _plan, cost);
-}
-
-bool
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                Path& _plan, double& _cost) {
-  std::string message;
-  return makePlan(_start, _goal, tolerance_, _plan, _cost, message) == SUCCESS;
-}
-
-uint32_t
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                const double _tolerance, Path& _plan,
-                                double& _cost, std::string& _message) {
-  // reset cancel flag
-  cancel_ = false;
-
-  // local copies since we might alter the poses
-  Pose start = _start;
-  Pose goal = _goal;
-  _plan.clear();
-
-  // pre-planning
-  if (!prePlanning(start, goal, _tolerance))
-    return FAILURE;
-
-  // planning
-  if (!globalPlanning(start, goal, _plan, _cost))
-    return FAILURE;
-
-  // post-planning
-  if (!postPlanning(_plan, _cost))
-    return FAILURE;
-
-  return SUCCESS;
+  _initPrePlanning(nh, pre_planning_);
+  _initPostPlanning(nh, costmap_, post_planning_);
+  _initPlanning(nh, costmap_, global_planning_);
 }
 
 template <typename _Plugin, typename _Functor>
@@ -287,10 +246,51 @@ GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
   }
 
   // run all global planners... typically only one should be loaded.
-  auto post_planning = [&](BaseGlobalPlanner& _plugin) {
+  auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);
   };
-  return _runPlugins(global_planning_, post_planning, "planning", cancel_);
+  return _runPlugins(global_planning_, planning, "planning", cancel_);
+}
+
+bool
+GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
+                                Path& _plan) {
+  double cost;
+  return makePlan(_start, _goal, _plan, cost);
+}
+
+bool
+GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
+                                Path& _plan, double& _cost) {
+  std::string message;
+  return makePlan(_start, _goal, tolerance_, _plan, _cost, message) == SUCCESS;
+}
+
+uint32_t
+GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
+                                const double _tolerance, Path& _plan,
+                                double& _cost, std::string& _message) {
+  // reset cancel flag
+  cancel_ = false;
+
+  // local copies since we might alter the poses
+  Pose start = _start;
+  Pose goal = _goal;
+  _plan.clear();
+
+  // pre-planning
+  if (!prePlanning(start, goal, _tolerance))
+    return FAILURE;
+
+  // planning
+  if (!globalPlanning(start, goal, _plan, _cost))
+    return FAILURE;
+
+  // post-planning
+  if (!postPlanning(_plan, _cost))
+    return FAILURE;
+
+  return SUCCESS;
 }
 
 bool
