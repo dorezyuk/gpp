@@ -1,0 +1,11 @@
+# General parameters
+robot_frame: base_link
+global_frame: map
+
+# Global planner parameters
+planners:
+  - {name: gpp_gp,        type: gpp_plugin::GlobalPlannerPipeline}
+
+gpp_gp:  
+  planning:
+    - {name: global_planner,      type: global_planner/GlobalPlanner}

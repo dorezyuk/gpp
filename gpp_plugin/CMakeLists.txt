@@ -46,4 +46,8 @@ if(CATKIN_ENABLE_TESTING)
     test/array_plugin_manager.launch
     test/array_plugin_manager.cpp)
   target_link_libraries(array_plugin_manager_test ${PROJECT_NAME})
+
+  add_rostest(test/mbf_costmap_nav.launch)
+  add_rostest(test/move_base.launch)
+
 endif()

@@ -1,0 +1,13 @@
+<launch>
+  <!-- Test simply verifies that the move-base node can load our plugin -->
+  <!-- provide fake localization for the test -->
+  <node pkg="tf" type="static_transform_publisher" name="fake_localization" args="0 0 0 0 0 0 map base_link 10"/>
+
+  <!-- launch mbf-costmap-nav-->
+  <node pkg="move_base" type="move_base" name="move_base_node">
+    <rosparam file="$(find gpp_plugin)/test/move_base.yaml" command="load"/>
+  </node>
+
+  <!-- run test node -->
+  <test pkg="gpp_plugin" type="move_base.py" test-name="move_base" time-limit="100"/>
+</launch>

@@ -135,6 +135,7 @@ CostmapPlannerManager::createCustomInstance(const std::string& _type) {
       new BaseGlobalPlannerWrapper(std::move(impl_planner)), _default_deleter};
 }
 
+/// @brief helper to initialize the pre-planning plugins
 void
 _initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
   // load the plugins
@@ -148,6 +149,7 @@ _initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
 
 using costmap_2d::Costmap2DROS;
 
+/// @brief helper to initialize the post-planning plugins
 void
 _initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
                   PostPlanningManager& _post) {
@@ -160,6 +162,7 @@ _initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
     plugin.second->initialize(plugin.first, _costmap);
 }
 
+/// @brief helper to initialize the planning plugins
 void
 _initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
               CostmapPlannerManager& _planner) {
@@ -187,6 +190,10 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
   _initPlanning(nh, costmap_, global_planning_);
 }
 
+/// @brief helper to run all plugins stored in a given plugin-manager
+/// @tparam _Plugin type of the plugin (PrePlanningInterface, etc)
+/// @tparam _Functor functor taking the _Plugin-ref and returning true on
+/// success.
 template <typename _Plugin, typename _Functor>
 bool
 _runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
@@ -237,10 +244,8 @@ GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
 bool
 GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
                                       Path& _plan, double& _cost) {
-  const auto& plugins = global_planning_.getPlugins();
-
   // the whole class does not make sense without a global planner
-  if (plugins.empty()) {
+  if (global_planning_.getPlugins().empty()) {
     GPP_WARN("no planning plugin provided");
     return false;
   }

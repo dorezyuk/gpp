@@ -19,6 +19,8 @@
 
   <test_depend>rostest</test_depend>
   <test_depend>global_planner</test_depend>
+  <test_depend>mbf_costmap_nav</test_depend>
+  <test_depend>move_base</test_depend>
 
   <export>
     <nav_core plugin="${prefix}/plugin.xml"/>

@@ -1,0 +1,5 @@
+base_global_planner: "gpp_plugin::GlobalPlannerPipeline"
+
+GlobalPlannerPipeline:
+  planning:
+    - {name: global_planner,      type: global_planner/GlobalPlanner}
