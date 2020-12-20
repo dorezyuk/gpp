@@ -232,12 +232,14 @@ bool
 GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal,
                                    double _tolerance) {
   const auto& plugins = pre_planning_.getPlugins();
-  for (const auto& plugin : plugins)
+  for (const auto& plugin : plugins) {
+    GPP_DEBUG("pre-planning with " << plugin.first);
     if (cancel_ ||
         !plugin.second->preProcess(_start, _goal, *costmap_, _tolerance)) {
       GPP_ERROR("pre-planning failed at " << plugin.first);
       return false;
     }
+  }
 
   return true;
 }
@@ -245,11 +247,13 @@ GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal,
 bool
 GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
   const auto& plugins = post_planning_.getPlugins();
-  for (const auto& plugin : plugins)
+  for (const auto& plugin : plugins){
+    GPP_DEBUG("post-planning with " << plugin.first);
     if (cancel_ || !plugin.second->postProcess(_path, _cost)) {
       GPP_WARN("post-planning failed at " << plugin.first);
       return false;
     }
+  }
 
   return true;
 }
@@ -266,11 +270,13 @@ GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
   }
 
   // run all global planners... typically only one should be loaded.
-  for (const auto& plugin : plugins)
+  for (const auto& plugin : plugins){
+    GPP_DEBUG("planning with " << plugin.first);
     if (cancel_ || !plugin.second->makePlan(_start, _goal, _plan, _cost)) {
       GPP_WARN("planning failed at " << plugin.first);
       return false;
     }
+  }
 
   return true;
 }
