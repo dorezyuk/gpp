@@ -2,7 +2,9 @@
 <package format="2">
   <name>gpp_plugin</name>
   <version>0.0.0</version>
-  <description>The gpp_plugin package</description>
+  <description>The gpp_plugin package offers a pipeline for running global 
+  planners together with auxiliary pre- and post-processing functions
+  </description>
 
   <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
 
