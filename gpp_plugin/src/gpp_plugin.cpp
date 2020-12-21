@@ -29,6 +29,7 @@
 #include <xmlrpcpp/XmlRpcValue.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace gpp_plugin {
 
