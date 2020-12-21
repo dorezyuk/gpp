@@ -244,7 +244,7 @@ _runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
     GPP_DEBUG(_name << " with " << plugin.first);
 
     // run the impl
-    if (_func(*plugin.second)) {
+    if (!_func(*plugin.second)) {
       GPP_ERROR(_name << " failed at " << plugin.first);
       return false;
     }
