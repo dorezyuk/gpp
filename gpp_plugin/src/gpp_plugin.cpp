@@ -58,6 +58,25 @@ _getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
   return static_cast<std::string>(_v[_tag]);
 }
 
+/// @brief helper to get any value from _v under _tag.
+/// If anything goes wrong, the function will fall-back to the _default value.
+template <typename _T>
+_T
+_getElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag,
+            const _T& _default) noexcept {
+  // check if the tag is defined (see above for explanation)
+  if (!_v.hasMember(_tag))
+    return _default;
+
+  // try to get the desired value
+  try {
+    return static_cast<_T>(_v[_tag]);
+  }
+  catch (XmlRpc::XmlRpcException& _ex) {
+    return _default;
+  }
+}
+
 template <typename _Plugin>
 void
 ArrayPluginManager<_Plugin>::load(const std::string& _resource,
@@ -97,8 +116,14 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       // mind the "this"
       auto plugin = this->createCustomInstance(type);
 
+      // assemble the parameter struct
+      PluginParameter param;
+      param.name = name;
+      param.on_failure_break = _getElement(element, "on_failure_break", true);
+      param.on_success_break = _getElement(element, "on_success_break", false);
       // this should not throw anymore
-      ManagerInterface<_Plugin>::plugins_.emplace_back(name, std::move(plugin));
+      ManagerInterface<_Plugin>::plugins_.emplace_back(param,
+                                                       std::move(plugin));
 
       // notify the user
       GPP_INFO("Successfully loaded " << type << " under the name " << name);
@@ -172,7 +197,7 @@ _initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
   // init the plugins
   const auto& plugins = _pre.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first);
+    plugin.second->initialize(plugin.first.name);
 }
 
 using costmap_2d::Costmap2DROS;
@@ -187,7 +212,7 @@ _initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
   // init the plugins
   const auto& plugins = _post.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first, _costmap);
+    plugin.second->initialize(plugin.first.name, _costmap);
 }
 
 /// @brief helper to initialize the planning plugins
@@ -200,7 +225,7 @@ _initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
   // init the plugins
   const auto& plugins = _planner.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first, _costmap);
+    plugin.second->initialize(plugin.first.name, _costmap);
 }
 
 void
@@ -228,12 +253,6 @@ _runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
             const std::string& _name, const std::atomic_bool& _cancel) {
   const auto& plugins = _mgr.getPlugins();
   for (const auto& plugin : plugins) {
-    // don't die
-    if (!plugin.second) {
-      GPP_FATAL(_name << " has a nullptr under the name " << plugin.first);
-      continue;
-    }
-
     // allow the user to cancel the job
     if (_cancel) {
       GPP_INFO(_name << " cancelled");
@@ -241,13 +260,17 @@ _runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
     }
 
     // tell my name
-    GPP_DEBUG(_name << " with " << plugin.first);
+    GPP_DEBUG(_name << " with " << plugin.first.name);
 
-    // run the impl
-    if (!_func(*plugin.second)) {
-      GPP_ERROR(_name << " failed at " << plugin.first);
-      return false;
+    // run the impl, but don't die
+    if (!plugin.second || !_func(*plugin.second)) {
+      // we have failed - we can either abort or ignore
+      GPP_ERROR(_name << " failed at " << plugin.first.name);
+      if (plugin.first.on_failure_break)
+        return false;
     }
+    else if (plugin.first.on_success_break)
+      break;
   }
   return true;
 }

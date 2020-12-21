@@ -125,6 +125,21 @@ struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
 };
 
 /**
+ * @brief Parameters defining how to execute a plugin.
+ *
+ * If on_success_break is set to true, and the plugin is executed successfully,
+ * the entire plugin-group (pre-, post-planning or planning) succeeds.
+ *
+ * If on_failure_continue is set to true, and the plugin fails, its plugin-group
+ * continues the execution.
+ */
+struct PluginParameter {
+  std::string name;
+  bool on_success_break = false;
+  bool on_failure_break = true;
+};
+
+/**
  * @brief Common interface for a plugin-manager
  *
  * The class defines the ownership and storage of plugins.
@@ -135,7 +150,7 @@ struct ManagerInterface {
   // this class owns the plugin
   using PluginPtr = typename pluginlib::UniquePtr<_Plugin>;
 
-  using NamedPlugin = std::pair<std::string, PluginPtr>;
+  using NamedPlugin = std::pair<PluginParameter, PluginPtr>;
   using PluginMap = std::vector<NamedPlugin>;
 
   inline const PluginMap&
