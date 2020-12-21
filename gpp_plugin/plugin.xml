@@ -2,13 +2,13 @@
     <class type="gpp_plugin::GlobalPlannerPipeline"
            base_class_type="nav_core::BaseGlobalPlanner">
         <description>
-            extention for global planners
+            pipeline for global-planners
         </description>
     </class>
     <class type="gpp_plugin::GlobalPlannerPipeline"
         base_class_type="mbf_costmap_core::CostmapPlanner">
         <description>
-            extention for global planners
+            pipeline for global-planners
         </description>
     </class>
 </library>

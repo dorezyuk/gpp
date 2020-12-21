@@ -57,3 +57,13 @@ Here, the user may implement common post-processing steps like
 - trajectory smoothing,
 - trajectory oscillation checks,
 - feasibility checks
+
+## Build
+
+The build-step is very similar to the standard ros-packages:
+```
+cd catkin_ws/src
+git clone https://github.com/dorezyuk/gpp.git
+cd gpp/gpp_plugin
+catkin build --this
+```
