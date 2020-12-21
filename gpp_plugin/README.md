@@ -51,7 +51,6 @@ Below two example configs for the `move_base` and `move_base_flex` frameworks.
 ### MoveBase
 
 ```yaml
-
 base_global_planner: "gpp_plugin::GlobalPlannerPipeline"
 
 # move-base will pass the type to the loaded plugin.
@@ -79,7 +78,6 @@ GlobalPlannerPipeline:
 ### MoveBaseFlex
 
 ```yaml
-
 # your planner definition
 # we name our planner gpp
 planner:
@@ -107,4 +105,3 @@ gpp:
     -  {name: second_post_planning_name, type: second_post_planning_type}
 
 ```
-

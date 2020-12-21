@@ -42,9 +42,9 @@ constexpr char gpp_name__[] = "[gpp]: ";
 #define GPP_ERROR(_msg) ROS_ERROR_STREAM(gpp_name__ << _msg)
 #define GPP_FATAL(_msg) ROS_FATAL_STREAM(gpp_name__ << _msg)
 
-// outcome definition for mbf_core based plugins
-constexpr uint32_t SUCCESS = 0;
-constexpr uint32_t FAILURE = 50;
+// outcome definition for mbf_costmap_core based plugins
+constexpr uint32_t MBF_SUCCESS = 0;
+constexpr uint32_t MBF_FAILURE = 50;
 
 /// @brief helper to get a string element with the tag _tag from _v
 /// @throw XmlRpc::XmlRpcException if the tag is missing
@@ -133,7 +133,7 @@ bool
 BaseGlobalPlannerWrapper::makePlan(const Pose& start, const Pose& goal,
                                    Path& plan, double& cost) {
   std::string message;
-  return impl_->makePlan(start, goal, 0, plan, cost, message) == SUCCESS;
+  return impl_->makePlan(start, goal, 0, plan, cost, message) == MBF_SUCCESS;
 }
 
 void
@@ -296,7 +296,9 @@ bool
 GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
                                 Path& _plan, double& _cost) {
   std::string message;
-  return makePlan(_start, _goal, tolerance_, _plan, _cost, message) == SUCCESS;
+  // clang-format off
+  return makePlan(_start, _goal, tolerance_, _plan, _cost, message) == MBF_SUCCESS;
+  // clang-format on
 }
 
 uint32_t
@@ -313,17 +315,17 @@ GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
 
   // pre-planning
   if (!prePlanning(start, goal, _tolerance))
-    return FAILURE;
+    return MBF_FAILURE;
 
   // planning
   if (!globalPlanning(start, goal, _plan, _cost))
-    return FAILURE;
+    return MBF_FAILURE;
 
   // post-planning
   if (!postPlanning(_plan, _cost))
-    return FAILURE;
+    return MBF_FAILURE;
 
-  return SUCCESS;
+  return MBF_SUCCESS;
 }
 
 bool
