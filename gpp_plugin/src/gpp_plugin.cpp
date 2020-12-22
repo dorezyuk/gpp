@@ -101,8 +101,8 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
   const auto size = raw.size();
 
   // clear the old data and allocate space
-  ManagerInterface<_Plugin>::plugins_.clear();
-  ManagerInterface<_Plugin>::plugins_.reserve(size);
+  PluginGroup<_Plugin>::plugins_.clear();
+  PluginGroup<_Plugin>::plugins_.reserve(size);
 
   // note: size raw.size() returns int
   for (int ii = 0; ii != size; ++ii) {
@@ -123,8 +123,7 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       param.on_failure_break = _getElement(element, "on_failure_break", true);
       param.on_success_break = _getElement(element, "on_success_break", false);
       // this should not throw anymore
-      ManagerInterface<_Plugin>::plugins_.emplace_back(param,
-                                                       std::move(plugin));
+      PluginGroup<_Plugin>::plugins_.emplace_back(param, std::move(plugin));
 
       // notify the user
       GPP_INFO("Successfully loaded " << type << " under the name " << name);
@@ -250,7 +249,7 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
 /// success.
 template <typename _Plugin, typename _Functor>
 bool
-_runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
+_runPlugins(const PluginGroup<_Plugin>& _mgr, const _Functor& _func,
             const std::string& _name, const std::atomic_bool& _cancel) {
   const auto& plugins = _mgr.getPlugins();
   for (const auto& plugin : plugins) {
@@ -271,7 +270,7 @@ _runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
         return false;
     }
     else if (plugin.first.on_success_break)
-      break;
+      return true;
   }
   return true;
 }

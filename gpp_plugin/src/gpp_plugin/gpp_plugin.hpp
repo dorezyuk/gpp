@@ -107,7 +107,6 @@ const std::string PluginDefinition<CostmapPlanner>::base_class = "mbf_costmap_co
  * Secondly it defined our way to load the plugins (namely by returning a unique
  * ptr). This method is declared virtual, so we can load CostmapPlanner
  * under the interface of BaseGlobalPlanners.
- *
  */
 template <typename _Plugin>
 struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
@@ -140,13 +139,13 @@ struct PluginParameter {
 };
 
 /**
- * @brief Common interface for a plugin-manager
+ * @brief Common interface to a plugin group
  *
  * The class defines the ownership and storage of plugins.
  * Typically we own the plugin and store all of them in a vector.
  */
 template <typename _Plugin>
-struct ManagerInterface {
+struct PluginGroup {
   // this class owns the plugin
   using PluginPtr = typename pluginlib::UniquePtr<_Plugin>;
 
@@ -229,7 +228,7 @@ protected:
  */
 template <typename _Plugin>
 struct ArrayPluginManager : public PluginManager<_Plugin>,
-                            public ManagerInterface<_Plugin> {
+                            public PluginGroup<_Plugin> {
   void
   load(const std::string& _resource, ros::NodeHandle& _nh);
 };
