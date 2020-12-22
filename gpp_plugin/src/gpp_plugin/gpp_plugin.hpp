@@ -107,7 +107,6 @@ const std::string PluginDefinition<CostmapPlanner>::base_class = "mbf_costmap_co
  * Secondly it defined our way to load the plugins (namely by returning a unique
  * ptr). This method is declared virtual, so we can load CostmapPlanner
  * under the interface of BaseGlobalPlanners.
- *
  */
 template <typename _Plugin>
 struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
@@ -125,17 +124,32 @@ struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
 };
 
 /**
- * @brief Common interface for a plugin-manager
+ * @brief Parameters defining how to execute a plugin.
+ *
+ * If on_success_break is set to true, and the plugin is executed successfully,
+ * the entire plugin-group (pre-, post-planning or planning) succeeds.
+ *
+ * If on_failure_continue is set to true, and the plugin fails, its plugin-group
+ * continues the execution.
+ */
+struct PluginParameter {
+  std::string name;
+  bool on_success_break = false;
+  bool on_failure_break = true;
+};
+
+/**
+ * @brief Common interface to a plugin group
  *
  * The class defines the ownership and storage of plugins.
  * Typically we own the plugin and store all of them in a vector.
  */
 template <typename _Plugin>
-struct ManagerInterface {
+struct PluginGroup {
   // this class owns the plugin
   using PluginPtr = typename pluginlib::UniquePtr<_Plugin>;
 
-  using NamedPlugin = std::pair<std::string, PluginPtr>;
+  using NamedPlugin = std::pair<PluginParameter, PluginPtr>;
   using PluginMap = std::vector<NamedPlugin>;
 
   inline const PluginMap&
@@ -143,10 +157,74 @@ struct ManagerInterface {
     return plugins_;
   }
 
+  inline const std::string&
+  getName() const noexcept {
+    return name_;
+  }
+
+  inline const bool&
+  getDefaultValue() const noexcept {
+    return default_value_;
+  }
+
 protected:
+  bool default_value_;
+  std::string name_ = "undefined";
   PluginMap plugins_;
 };
 
+/**
+ * @brief Execution logic to run all plugins within one group
+ *
+ * @tparam _Plugin type of the plugin (PrePlanningInterface, etc)
+ * @tparam _Functor functor taking the _Plugin-ref and returning true on success
+ *
+ * This function implements the main logic, how to map the result from plugins
+ * within a group to the group result.
+ *
+ * @param _grp a group of plugins
+ * @param _func a functor responsible for calling the plugin's main function.
+ * @param _cancel boolean cancel flag.
+ */
+template <typename _Plugin, typename _Functor>
+bool
+_runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
+            const std::atomic_bool& _cancel) {
+  const auto& plugins = _grp.getPlugins();
+  const std::string name = "[" + _grp.getName() + "]: ";
+  for (const auto& plugin : plugins) {
+    // allow the user to cancel the job
+    if (_cancel) {
+      ROS_INFO_STREAM(name << "cancelled");
+      return false;
+    }
+
+    // tell my name
+    ROS_INFO_STREAM(name << "runs " << plugin.first.name);
+
+    // run the impl, but don't die
+    if (!plugin.second || !_func(*plugin.second)) {
+      // we have failed - we can either abort or ignore
+      ROS_WARN_STREAM(name << "failed at " << plugin.first.name);
+      if (plugin.first.on_failure_break)
+        return false;
+    }
+    else if (plugin.first.on_success_break)
+      return true;
+  }
+  return _grp.getDefaultValue();
+}
+
+/// @brief as _runPlugins but with a warning on failure
+template <typename _Plugin, typename _Functor>
+bool
+runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
+           const std::atomic_bool& _cancel) {
+  const auto result = _runPlugins(_grp, _func, _cancel);
+  // print a conditional warning
+  ROS_WARN_STREAM_COND(!result, "[gpp]: failed at group " << _grp.getName());
+  return result;
+}
 /**
  * @brief Loads an array of plugins.
  *
@@ -214,7 +292,7 @@ protected:
  */
 template <typename _Plugin>
 struct ArrayPluginManager : public PluginManager<_Plugin>,
-                            public ManagerInterface<_Plugin> {
+                            public PluginGroup<_Plugin> {
   void
   load(const std::string& _resource, ros::NodeHandle& _nh);
 };

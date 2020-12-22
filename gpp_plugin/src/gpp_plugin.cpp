@@ -29,6 +29,7 @@
 #include <xmlrpcpp/XmlRpcValue.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace gpp_plugin {
 
@@ -58,10 +59,34 @@ _getStringElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag) {
   return static_cast<std::string>(_v[_tag]);
 }
 
+/// @brief helper to get any value from _v under _tag.
+/// If anything goes wrong, the function will fall-back to the _default value.
+template <typename _T>
+_T
+_getElement(const XmlRpc::XmlRpcValue& _v, const std::string& _tag,
+            const _T& _default) noexcept {
+  // check if the tag is defined (see above for explanation)
+  if (!_v.hasMember(_tag))
+    return _default;
+
+  // try to get the desired value
+  try {
+    return static_cast<_T>(_v[_tag]);
+  }
+  catch (XmlRpc::XmlRpcException& _ex) {
+    return _default;
+  }
+}
+
 template <typename _Plugin>
 void
 ArrayPluginManager<_Plugin>::load(const std::string& _resource,
                                   ros::NodeHandle& _nh) {
+  // load the group parameters
+  PluginGroup<_Plugin>::name_ = _resource;
+  PluginGroup<_Plugin>::default_value_ =
+      _nh.param(_resource + "_default_value", true);
+
   // we expect that _resource defines an array
   using namespace XmlRpc;
   XmlRpcValue raw;
@@ -81,8 +106,8 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
   const auto size = raw.size();
 
   // clear the old data and allocate space
-  ManagerInterface<_Plugin>::plugins_.clear();
-  ManagerInterface<_Plugin>::plugins_.reserve(size);
+  PluginGroup<_Plugin>::plugins_.clear();
+  PluginGroup<_Plugin>::plugins_.reserve(size);
 
   // note: size raw.size() returns int
   for (int ii = 0; ii != size; ++ii) {
@@ -97,8 +122,13 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       // mind the "this"
       auto plugin = this->createCustomInstance(type);
 
+      // assemble the parameter struct
+      PluginParameter param;
+      param.name = name;
+      param.on_failure_break = _getElement(element, "on_failure_break", true);
+      param.on_success_break = _getElement(element, "on_success_break", false);
       // this should not throw anymore
-      ManagerInterface<_Plugin>::plugins_.emplace_back(name, std::move(plugin));
+      PluginGroup<_Plugin>::plugins_.emplace_back(param, std::move(plugin));
 
       // notify the user
       GPP_INFO("Successfully loaded " << type << " under the name " << name);
@@ -172,7 +202,7 @@ _initPrePlanning(ros::NodeHandle& _nh, PrePlanningManager& _pre) {
   // init the plugins
   const auto& plugins = _pre.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first);
+    plugin.second->initialize(plugin.first.name);
 }
 
 using costmap_2d::Costmap2DROS;
@@ -187,7 +217,7 @@ _initPostPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
   // init the plugins
   const auto& plugins = _post.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first, _costmap);
+    plugin.second->initialize(plugin.first.name, _costmap);
 }
 
 /// @brief helper to initialize the planning plugins
@@ -200,7 +230,7 @@ _initPlanning(ros::NodeHandle& _nh, Costmap2DROS* _costmap,
   // init the plugins
   const auto& plugins = _planner.getPlugins();
   for (const auto& plugin : plugins)
-    plugin.second->initialize(plugin.first, _costmap);
+    plugin.second->initialize(plugin.first.name, _costmap);
 }
 
 void
@@ -218,47 +248,13 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
   _initPlanning(nh, costmap_, global_planning_);
 }
 
-/// @brief helper to run all plugins stored in a given plugin-manager
-/// @tparam _Plugin type of the plugin (PrePlanningInterface, etc)
-/// @tparam _Functor functor taking the _Plugin-ref and returning true on
-/// success.
-template <typename _Plugin, typename _Functor>
-bool
-_runPlugins(const ManagerInterface<_Plugin>& _mgr, const _Functor& _func,
-            const std::string& _name, const std::atomic_bool& _cancel) {
-  const auto& plugins = _mgr.getPlugins();
-  for (const auto& plugin : plugins) {
-    // don't die
-    if (!plugin.second) {
-      GPP_FATAL(_name << " has a nullptr under the name " << plugin.first);
-      continue;
-    }
-
-    // allow the user to cancel the job
-    if (_cancel) {
-      GPP_INFO(_name << " cancelled");
-      return false;
-    }
-
-    // tell my name
-    GPP_DEBUG(_name << " with " << plugin.first);
-
-    // run the impl
-    if (!_func(*plugin.second)) {
-      GPP_ERROR(_name << " failed at " << plugin.first);
-      return false;
-    }
-  }
-  return true;
-}
-
 bool
 GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal,
                                    double _tolerance) {
   auto pre_planning = [&](PrePlanningInterface& _plugin) {
     return _plugin.preProcess(_start, _goal, *costmap_, _tolerance);
   };
-  return _runPlugins(pre_planning_, pre_planning, "pre_planning", cancel_);
+  return runPlugins(pre_planning_, pre_planning, cancel_);
 }
 
 bool
@@ -266,23 +262,17 @@ GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
   auto post_planning = [&](PostPlanningInterface& _plugin) {
     return _plugin.postProcess(_path, _cost);
   };
-  return _runPlugins(post_planning_, post_planning, "post_planning", cancel_);
+  return runPlugins(post_planning_, post_planning, cancel_);
 }
 
 bool
 GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
                                       Path& _plan, double& _cost) {
-  // the whole class does not make sense without a global planner
-  if (global_planning_.getPlugins().empty()) {
-    GPP_WARN("no planning plugin provided");
-    return false;
-  }
-
   // run all global planners... typically only one should be loaded.
   auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);
   };
-  return _runPlugins(global_planning_, planning, "planning", cancel_);
+  return runPlugins(global_planning_, planning, cancel_);
 }
 
 bool

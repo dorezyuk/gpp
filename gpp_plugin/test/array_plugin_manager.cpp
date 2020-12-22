@@ -13,7 +13,18 @@ TEST(ArrayPluginManagerTest, DISABLED_Loading) {
   manager.load("plugins", nh);
 
   // check the size of the array
-  EXPECT_EQ(manager.getPlugins().size(), 3);
+  ASSERT_EQ(manager.getPlugins().size(), 3);
+
+  // now check the flags
+  const auto& plugins = manager.getPlugins();
+  std::array<bool, 3> on_success_break = {false, true, false};
+  std::array<bool, 3> on_failure_break = {true, false, true};
+
+  // check the loaded flags
+  for (size_t ii = 0; ii != plugins.size(); ++ii) {
+    EXPECT_EQ(plugins.at(ii).first.on_success_break, on_success_break.at(ii));
+    EXPECT_EQ(plugins.at(ii).first.on_failure_break, on_failure_break.at(ii));
+  }
 }
 
 TEST(CostmapPlannerManagerTest, DISABLED_Loading) {
@@ -23,7 +34,18 @@ TEST(CostmapPlannerManagerTest, DISABLED_Loading) {
   manager.load("plugins", nh);
 
   // check the size of the array
-  EXPECT_EQ(manager.getPlugins().size(), 3);
+  ASSERT_EQ(manager.getPlugins().size(), 3);
+
+  // now check the flags
+  const auto& plugins = manager.getPlugins();
+  std::array<bool, 3> on_success_break = {false, true, false};
+  std::array<bool, 3> on_failure_break = {true, false, true};
+
+  // check the loaded flags
+  for (size_t ii = 0; ii != plugins.size(); ++ii) {
+    EXPECT_EQ(plugins.at(ii).first.on_success_break, on_success_break.at(ii));
+    EXPECT_EQ(plugins.at(ii).first.on_failure_break, on_failure_break.at(ii));
+  }
 }
 
 TEST(ArrayPluginManagerTest, NotAnArray) {

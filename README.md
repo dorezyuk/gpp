@@ -19,22 +19,47 @@ It will load and run an arbitrary number of pre-planning, planning and post-plan
 ![image](docs/schematic.svg)
 
 The image above illustrates the "pipeline" concept.
+The `gpp_plugin` has loads three *groups* of child-plugins: the pre-planning, planning and post-planning group.
+Every group may contain an arbitrary number of child-plugins.
 
-On calling `makePlan`, the `gpp_plugin` will firstly run all pre-planning plugins. 
+On calling `makePlan`, the `gpp_plugin` firstly runs the pre-planning group.
+The child-plugins within this group implement the `gpp_interface::PrePlanningInterface`.
 Those plugins may modify the input-parameters (start and goal poses and costmap).
 
-The modified input-parameters are then passed to the planning plugins.
+The modified input-parameters are then passed to the planning group.
+The child-plugins within this group implement either the `nav_core::BaseGlobalPlanner` or the `mbf_costmap_core::CostmapPlanner` interface.
 The user may define an arbitrary number of planning plugins - but must provide at least one.
-The `gpp_plugin` will invoke all planning plugins, passing the generated path and cost from one planner to its successor.
+The `gpp_plugin` will invoke all planning child-plugins, passing the generated path and cost from one planner to its successor.
 This allows to create a "planner-chain" - a feature successfully used in the [moveit](https://moveit.ros.org/) framework.
 
-Finally, the output from the planning step is passed to the post-planning plugins.
+Finally, the output from the planning group is passed to the post-planning group.
+The child-plugins within this group implement the `gpp_interface::PostPlanningInterface`.
 Every post-planning plugin may modify the generated path and cost.
 Here, the user may implement post-processing steps, like path-smoothing or additional checks.
 
-The `gpp_plugin` offers no possibility to recover from a plugin-failure;
-This means the entire execution fails, if one of the loaded plugins fails.
-Keep this in mind, when designing and implementing your pre- and post-planning plugins.
+The `gpp_plugin` allows you also to customize what happens when a child-plugin finishes.
+Every child-plugin has boolean `on_failure_break` and `on_success_break` flags.
+- If a child-plugin fails and `on_failure_break` is set to true, the `gpp_plugin` fails.
+- If a child-plugin fails and `on_failure_break` is set to false, its failure is ignored and the execution continues with the next plugin.
+- If a child-plugin succeeds and `on_success_break` is set to true, the `gpp_plugin` continues with the next **group**
+- If a child-plugin succeeds and `on_success_break` is set to false, the `gpp_plugin` continues with the next **plugin**
+
+Additionally you may specify the default value for every group.
+This value is returned if no "break" condition is triggered (`on_success_break` or `on_failure_break`).
+
+### Behavior-Tree-Relation
+
+You may set all the `on_failure_break`, `on_success_break` and default_values freely.
+Nonetheless, it's maybe important to highlight that you can implement sequence and selector nodes known from [behavior-trees](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control)) with the mentioned parameters.
+
+This works if all child-plugins within one group have the same values for `on_success_break` and `on_failure_break`.
+The table below shows which values result in which behavior-tree node.
+
+| flag             | sequence | selector |
+|------------------|----------|----------|
+| on_failure_break | true     | false    |
+| on_success_break | false    | true     |
+| default_value    | true     | false    |
 
 ## PrePlanning
 

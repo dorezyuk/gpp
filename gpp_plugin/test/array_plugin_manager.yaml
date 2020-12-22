@@ -2,7 +2,7 @@
 # testing, but the test would be identical for pre- and post-planning.
 plugins:
   - {name: planner1, type: global_planner/GlobalPlanner} # a valid plugins
-  - {name: planner2, type: global_planner/GlobalPlanner} # another one
+  - {name: planner2, type: global_planner/GlobalPlanner, on_failure_break: false, on_success_break: true} # another one
   - {name: planner3, type: global_planner/Unknown}       # bad type
   - {name: planner3, type: 1}                            # bad type (no string)
   - {name: planner4, no_type: NoType}                    # no type
@@ -13,5 +13,5 @@ plugins:
   - 1
   - {name: planner7, type: global_planner/GlobalPlanner} # a final valid plugin
 
-not_an_array: "really  bad"
+not_an_array: "really bad"
 
