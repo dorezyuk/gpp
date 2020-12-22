@@ -44,9 +44,22 @@ Every child-plugin has boolean `on_failure_break` and `on_success_break` flags.
 - If a child-plugin succeeds and `on_success_break` is set to true, the `gpp_plugin` continues with the next **group**
 - If a child-plugin succeeds and `on_success_break` is set to false, the `gpp_plugin` continues with the next **plugin**
 
-Setting within a plugin-group all `on_success_break` flags to false and `on_failure_break` flags to true results in a Sequence-node (known from [behavior-tree](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control))).
+Additionally you may specify the default value for every group.
+This value is returned if no "break" condition is triggered (`on_success_break` or `on_failure_break`).
 
-Setting within a plugin-group all `on_success_break` flags to true and `on_failure_break` flags to false results in a behavior-tree Selector-node.
+### Behavior-Tree-Relation
+
+You may set all the `on_failure_break`, `on_success_break` and default_values freely.
+Nonetheless, it's maybe important to highlight that you can implement sequence and selector nodes known from [behavior-trees](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control)) with the mentioned parameters.
+
+This works if all child-plugins within one group have the same values for `on_success_break` and `on_failure_break`.
+The table below shows which values result in which behavior-tree node.
+
+| flag             | sequence | selector |
+|------------------|----------|----------|
+| on_failure_break | true     | false    |
+| on_success_break | false    | true     |
+| default_value    | true     | false    |
 
 ## PrePlanning
 

@@ -174,6 +174,49 @@ protected:
 };
 
 /**
+ * @brief Execution logic to run all plugins within one group
+ *
+ * @tparam _Plugin type of the plugin (PrePlanningInterface, etc)
+ * @tparam _Functor functor taking the _Plugin-ref and returning true on success
+ *
+ * This function implements the main logic, how to map the result from plugins
+ * within a group to the group result.
+ *
+ * @param _grp a group of plugins
+ * @param _func a functor responsible for calling the plugin's main function.
+ * @param _cancel boolean cancel flag.
+ *
+ */
+template <typename _Plugin, typename _Functor>
+bool
+runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
+           const std::atomic_bool& _cancel) {
+  const auto& plugins = _grp.getPlugins();
+  const std::string name = "[" + _grp.getName() + "]: ";
+  for (const auto& plugin : plugins) {
+    // allow the user to cancel the job
+    if (_cancel) {
+      ROS_INFO_STREAM(name << "cancelled");
+      return false;
+    }
+
+    // tell my name
+    ROS_INFO_STREAM(name << "runs " << plugin.first.name);
+
+    // run the impl, but don't die
+    if (!plugin.second || !_func(*plugin.second)) {
+      // we have failed - we can either abort or ignore
+      ROS_ERROR_STREAM(name << "failed at " << plugin.first.name);
+      if (plugin.first.on_failure_break)
+        return false;
+    }
+    else if (plugin.first.on_success_break)
+      return true;
+  }
+  return _grp.getDefaultValue();
+}
+
+/**
  * @brief Loads an array of plugins.
  *
  * @section Usage
