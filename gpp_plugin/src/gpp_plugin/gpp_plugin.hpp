@@ -157,7 +157,19 @@ struct PluginGroup {
     return plugins_;
   }
 
+  inline const std::string&
+  getName() const noexcept {
+    return name_;
+  }
+
+  inline const bool&
+  getDefaultValue() const noexcept {
+    return default_value_;
+  }
+
 protected:
+  bool default_value_;
+  std::string name_;
   PluginMap plugins_;
 };
 

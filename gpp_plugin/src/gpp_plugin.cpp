@@ -97,6 +97,11 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
     return;
   }
 
+  // load the group parameters
+  PluginGroup<_Plugin>::name_ = _resource;
+  PluginGroup<_Plugin>::default_value_ =
+      _nh.param(_resource + "_default_value", true);
+
   // will throw if not XmlRpcValue::TypeArray
   const auto size = raw.size();
 
@@ -250,29 +255,29 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
 template <typename _Plugin, typename _Functor>
 bool
 _runPlugins(const PluginGroup<_Plugin>& _mgr, const _Functor& _func,
-            const std::string& _name, const std::atomic_bool& _cancel) {
+            const std::atomic_bool& _cancel) {
   const auto& plugins = _mgr.getPlugins();
   for (const auto& plugin : plugins) {
     // allow the user to cancel the job
     if (_cancel) {
-      GPP_INFO(_name << " cancelled");
+      GPP_INFO(_mgr.getName() << " cancelled");
       return false;
     }
 
     // tell my name
-    GPP_DEBUG(_name << " with " << plugin.first.name);
+    GPP_DEBUG(_mgr.getName() << " with " << plugin.first.name);
 
     // run the impl, but don't die
     if (!plugin.second || !_func(*plugin.second)) {
       // we have failed - we can either abort or ignore
-      GPP_ERROR(_name << " failed at " << plugin.first.name);
+      GPP_ERROR(_mgr.getName() << " failed at " << plugin.first.name);
       if (plugin.first.on_failure_break)
         return false;
     }
     else if (plugin.first.on_success_break)
       return true;
   }
-  return true;
+  return _mgr.getDefaultValue();
 }
 
 bool
@@ -281,7 +286,7 @@ GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal,
   auto pre_planning = [&](PrePlanningInterface& _plugin) {
     return _plugin.preProcess(_start, _goal, *costmap_, _tolerance);
   };
-  return _runPlugins(pre_planning_, pre_planning, "pre_planning", cancel_);
+  return _runPlugins(pre_planning_, pre_planning, cancel_);
 }
 
 bool
@@ -289,7 +294,7 @@ GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
   auto post_planning = [&](PostPlanningInterface& _plugin) {
     return _plugin.postProcess(_path, _cost);
   };
-  return _runPlugins(post_planning_, post_planning, "post_planning", cancel_);
+  return _runPlugins(post_planning_, post_planning, cancel_);
 }
 
 bool
@@ -305,7 +310,7 @@ GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
   auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);
   };
-  return _runPlugins(global_planning_, planning, "planning", cancel_);
+  return _runPlugins(global_planning_, planning, cancel_);
 }
 
 bool
