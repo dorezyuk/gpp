@@ -82,6 +82,11 @@ template <typename _Plugin>
 void
 ArrayPluginManager<_Plugin>::load(const std::string& _resource,
                                   ros::NodeHandle& _nh) {
+  // load the group parameters
+  PluginGroup<_Plugin>::name_ = _resource;
+  PluginGroup<_Plugin>::default_value_ =
+      _nh.param(_resource + "_default_value", true);
+
   // we expect that _resource defines an array
   using namespace XmlRpc;
   XmlRpcValue raw;
@@ -96,11 +101,6 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
     GPP_WARN("invalid type for " << _resource);
     return;
   }
-
-  // load the group parameters
-  PluginGroup<_Plugin>::name_ = _resource;
-  PluginGroup<_Plugin>::default_value_ =
-      _nh.param(_resource + "_default_value", true);
 
   // will throw if not XmlRpcValue::TypeArray
   const auto size = raw.size();
@@ -268,12 +268,6 @@ GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
 bool
 GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
                                       Path& _plan, double& _cost) {
-  // the whole class does not make sense without a global planner
-  if (global_planning_.getPlugins().empty()) {
-    GPP_WARN("no planning plugin provided");
-    return false;
-  }
-
   // run all global planners... typically only one should be loaded.
   auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);

@@ -91,8 +91,8 @@ GlobalPlannerPipeline:
     # define the planning plugins
     planning_default_value: false
     planning:
-    -  {name: first_planning_name, type: first_planning_type, on_success_break: true}
-    -  {name: second_planning_name, type: second_planning_type, on_success_break: true}
+    -  {name: first_planning_name, type: first_planning_type, on_failure_break: false, on_success_break: true}
+    -  {name: second_planning_name, type: second_planning_type, on_failure_break: false, on_success_break: true}
 
     # define the post-planning plugins
     post_planning:
@@ -123,8 +123,8 @@ gpp:
     # define the planning plugins
     planning_default_value: false
     planning:
-    -  {name: first_planning_name, type: first_planning_type, on_success_break: true}
-    -  {name: second_planning_name, type: second_planning_type, on_success_break: true}
+    -  {name: first_planning_name, type: first_planning_type, on_failure_break: false, on_success_break: true}
+    -  {name: second_planning_name, type: second_planning_type, on_failure_break: false, on_success_break: true}
 
     # define the post-planning plugins
     post_planning:

@@ -169,7 +169,7 @@ struct PluginGroup {
 
 protected:
   bool default_value_;
-  std::string name_;
+  std::string name_ = "undefined";
   PluginMap plugins_;
 };
 
@@ -185,12 +185,11 @@ protected:
  * @param _grp a group of plugins
  * @param _func a functor responsible for calling the plugin's main function.
  * @param _cancel boolean cancel flag.
- *
  */
 template <typename _Plugin, typename _Functor>
 bool
-runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
-           const std::atomic_bool& _cancel) {
+_runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
+            const std::atomic_bool& _cancel) {
   const auto& plugins = _grp.getPlugins();
   const std::string name = "[" + _grp.getName() + "]: ";
   for (const auto& plugin : plugins) {
@@ -206,7 +205,7 @@ runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
     // run the impl, but don't die
     if (!plugin.second || !_func(*plugin.second)) {
       // we have failed - we can either abort or ignore
-      ROS_ERROR_STREAM(name << "failed at " << plugin.first.name);
+      ROS_WARN_STREAM(name << "failed at " << plugin.first.name);
       if (plugin.first.on_failure_break)
         return false;
     }
@@ -216,6 +215,16 @@ runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
   return _grp.getDefaultValue();
 }
 
+/// @brief as _runPlugins but with a warning on failure
+template <typename _Plugin, typename _Functor>
+bool
+runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
+           const std::atomic_bool& _cancel) {
+  const auto result = _runPlugins(_grp, _func, _cancel);
+  // print a conditional warning
+  ROS_WARN_STREAM_COND(!result, "[gpp]: failed at group " << _grp.getName());
+  return result;
+}
 /**
  * @brief Loads an array of plugins.
  *
