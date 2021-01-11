@@ -1,7 +1,7 @@
 # GppInterface
 
 This package defines two additional plugin-types: [PrePlanning](#preplanning) and [PostPlanning](#postplanning) plugins.
-These plugins will be loaded and executed by the [GppPluing](../gpp_plugin).
+These plugins will be loaded and executed by the [GppPlugin](../gpp_plugin).
 
 ## PrePlanning
 

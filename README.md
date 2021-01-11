@@ -13,7 +13,7 @@ The goal is to separate auxiliary functions from the implementation of the globa
 Additionally the library allows you to create a "planner-chain" - a feature successfully used in the [moveit](https://moveit.ros.org/) framework.
 
 The project consists of two components.
-The [gpp_interface](gpp_interface) defines two additional plugin-types: [PrePlanning](#preplanning) and [PostPlanning](#postplanning) plugins.
+The [gpp_interface](gpp_interface) defines two additional plugin-types: PrePlanning and PostPlanning plugins.
 The [gpp_plugin](gpp_plugin) implements the pipeline which will load and run these pre- and post-planning plugins together with global-planner plugins.
 
 ## Concept
@@ -32,7 +32,7 @@ When calling `GppPlugin::makePlan`, the GppPlugin will invoke its child-plugins.
 The execution of those child-plugins is sequentially, going from the pre- over the planning- to the post-planning group.
 The result from each child-plugin is passed on the the next.
 
-Readon what you can do with the two [additional interfaces](gpp_interface/README.md), or how to configure the [GppPlugin](gpp_plugin/README.md).
+Read on what you can do with the two [additional interfaces](gpp_interface/README.md), or how to configure the [GppPlugin](gpp_plugin/README.md).
 
 ## Build
 

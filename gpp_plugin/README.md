@@ -57,7 +57,7 @@ pre_planning:
     - {name: foo, type: bar, on_failure_break: True, on_success_break: False}
     - {name: baz, type: bum, on_failure_break: True, on_success_break: False}
 
-    default_value: True
+pre_planning_default_value: True
 ```
 
 We load in our pre-planning group two child-plugins with the names foo and baz.
@@ -89,6 +89,38 @@ Value defining if the group should break its execution if this child-plugin fail
 
 Value defining if the group should break its execution if this child-plugin succeeds.
 
-### ~\<name>\/<pre_planning|planning|post_planning>\/default_value (bool, true)
+### ~\<name>\/<pre_planning|planning|post_planning>\_default_value (bool, true)
 
 Default outcome of the group.
+
+## Example
+
+Now we put the things together and create a dummy example for the GppPlugin.
+It assumes you are u
+
+```yaml
+
+# this is for move-base-flex.
+plugins:
+    - {name: gpp_plugin, type: gpp_plugin::GppPlugin}
+
+gpp_plugin:
+    # we first define the pre_planning group. lets say all child-plugins are
+    # optional and we may continue even if all child-plugins fail.
+    pre_planning:
+        - {name: pre_planner_name1, type: pre_planner_type1, on_failure_break: false}
+        - {name: pre_planner_name2, type: pre_planner_type2, on_failure_break: false}
+    pre_planning_default_value: True
+    # now we define the planning group: we run both planners and take the first
+    # successful result. if all planners fail, we fail
+    planning:
+        - {name: planner_name1, type: planner_type1, on_failure_break: false, on_success_break: true}
+        - {name: planner_name2, type: planner_type2, on_failure_break: false, on_success_break: true}
+    planning_default_value: False
+    # finally the pose_planning group: we say that the post_planner_name1 is required,
+    # the post_planner_name2 is optional.
+    planning:
+        - {name: post_planner_name1, type: post_planner_type1, on_failure_break: true}
+        - {name: post_planner_name2, type: post_planner_type2, on_failure_break: false}
+    planning_default_value: True
+```

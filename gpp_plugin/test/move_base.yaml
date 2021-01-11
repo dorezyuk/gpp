@@ -1,7 +1,7 @@
-base_global_planner: "gpp_plugin::GlobalPlannerPipeline"
+base_global_planner: "gpp_plugin::GppPlugin"
 
 # note: move_base assumes that the parameters live under the "pluginlib-name"
 # of the loaded planner
-GlobalPlannerPipeline:
+GppPlugin:
   planning:
     - {name: global_planner,      type: global_planner/GlobalPlanner}

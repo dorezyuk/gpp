@@ -207,7 +207,7 @@ _initGroup(const std::string& _name, costmap_2d::Costmap2DROS* _costmap,
 }
 
 void
-GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
+GppPlugin::initialize(std::string _name, Map* _costmap) {
   name_ = _name;
   costmap_ = _costmap;
 
@@ -221,7 +221,7 @@ GlobalPlannerPipeline::initialize(std::string _name, Map* _costmap) {
 }
 
 bool
-GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal) {
+GppPlugin::prePlanning(Pose& _start, Pose& _goal) {
   auto pre_planning = [&](PrePlanningInterface& _plugin) {
     return _plugin.preProcess(_start, _goal);
   };
@@ -229,7 +229,7 @@ GlobalPlannerPipeline::prePlanning(Pose& _start, Pose& _goal) {
 }
 
 bool
-GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
+GppPlugin::postPlanning(Path& _path, double& _cost) {
   auto post_planning = [&](PostPlanningInterface& _plugin) {
     return _plugin.postProcess(_path, _cost);
   };
@@ -237,8 +237,8 @@ GlobalPlannerPipeline::postPlanning(Path& _path, double& _cost) {
 }
 
 bool
-GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
-                                      Path& _plan, double& _cost) {
+GppPlugin::globalPlanning(const Pose& _start, const Pose& _goal, Path& _plan,
+                          double& _cost) {
   // run all global planners... typically only one should be loaded.
   auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);
@@ -247,30 +247,28 @@ GlobalPlannerPipeline::globalPlanning(const Pose& _start, const Pose& _goal,
 }
 
 bool
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                Path& _plan) {
+GppPlugin::makePlan(const Pose& _start, const Pose& _goal, Path& _plan) {
   double cost;
   return makePlan(_start, _goal, _plan, cost);
 }
 
 bool
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                Path& _plan, double& _cost) {
+GppPlugin::makePlan(const Pose& _start, const Pose& _goal, Path& _plan,
+                    double& _cost) {
   std::string message;
   return makePlan(_start, _goal, 0, _plan, _cost, message) == MBF_SUCCESS;
 }
 
 uint32_t
-GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
-                                const double _tolerance, Path& _plan,
-                                double& _cost, std::string& _message) {
+GppPlugin::makePlan(const Pose& _start, const Pose& _goal,
+                    const double _tolerance, Path& _plan, double& _cost,
+                    std::string& _message) {
   // reset cancel flag
   cancel_ = false;
 
   // local copies since we might alter the poses
   Pose start = _start;
   Pose goal = _goal;
-  _plan.clear();
 
   // pre-planning
   if (!prePlanning(start, goal))
@@ -288,7 +286,7 @@ GlobalPlannerPipeline::makePlan(const Pose& _start, const Pose& _goal,
 }
 
 bool
-GlobalPlannerPipeline::cancel() {
+GppPlugin::cancel() {
   GPP_INFO("cancelling");
   cancel_ = true;
   return true;
@@ -297,8 +295,6 @@ GlobalPlannerPipeline::cancel() {
 }  // namespace gpp_plugin
 
 // register for both interfaces
-PLUGINLIB_EXPORT_CLASS(gpp_plugin::GlobalPlannerPipeline,
-                       nav_core::BaseGlobalPlanner);
+PLUGINLIB_EXPORT_CLASS(gpp_plugin::GppPlugin, nav_core::BaseGlobalPlanner);
 
-PLUGINLIB_EXPORT_CLASS(gpp_plugin::GlobalPlannerPipeline,
-                       mbf_costmap_core::CostmapPlanner);
+PLUGINLIB_EXPORT_CLASS(gpp_plugin::GppPlugin, mbf_costmap_core::CostmapPlanner);
