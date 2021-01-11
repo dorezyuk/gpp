@@ -61,7 +61,7 @@ using nav_core::BaseGlobalPlanner;
 // clang-format off
 
 // below the definition of the different plugins.
-// we put it into the header, since this is type of the interface.
+// we put it into the header, since this is part of the interface.
 // extend here, if you want to load other types.
 
 // Preplanning specialization
@@ -126,11 +126,11 @@ struct PluginManager : public pluginlib::ClassLoader<_Plugin> {
 /**
  * @brief Parameters defining how to execute a plugin.
  *
- * If on_success_break is set to true, and the plugin is executed successfully,
- * the entire plugin-group (pre-, post-planning or planning) succeeds.
+ * If on_success_break is set to true, and the plugin succeeds, the entire
+ * plugin-group (pre-, post-planning or planning) succeeds.
  *
- * If on_failure_continue is set to true, and the plugin fails, its plugin-group
- * continues the execution.
+ * If on_failure_break is set to true, and the plugin fails, the entire
+ * plugin-group fails.
  */
 struct PluginParameter {
   std::string name;
@@ -232,7 +232,7 @@ runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
  *
  * The class offers two methods:
  * - load will try to read the types and names from the parameter server and
- *   load the specified plugins. This method is idempotent.
+ *   load the specified plugins.
  * - getPlugins will return the loaded plugins.
  *
  * Both methods are not thread-safe. The concurrency management must be done
@@ -270,13 +270,16 @@ runPlugins(const PluginGroup<_Plugin>& _grp, const _Functor& _func,
  * 'name' defines a unique descriptor which will be passed to a plugin.
  * 'type' defines the type of the plugin.
  * Both tags must have literal values.
+ * Additionally it may contain boolean 'on_failure_break' (defaults to true) and
+ * 'on_success_break' (defaults to false) tags. See PluginParameter for details.
  *
  * Code example:
  *
  * @code{yaml}
  * my_resource_tag:
  *  - {name: foo, type: a_valid_type}
- *  - {name: baz, type: another_type}
+ *  - {name: baz, type: another_type, on_failure_break: false, on_success_break:
+ * true}
  * @endcode
  *
  * @section Remarks
@@ -373,17 +376,9 @@ private:
  * the tags `name` and `type` - following the standard ros syntax for
  * pluginlib-loaded plugins.
  *
- * You need to provide at least one plugin under the tag `planning`.
- *
- * If you are not using `move_base_flex`, you can also define a custom tolerance
- * under the parameter `tolerance` - defining the metric goal tolerance.
- *
  * Below is a code example
  *
  * @code{yaml}
- *
- * # goal tolerance in meters
- * tolerance: 0.1
  *
  * # define the pre-planning plugins
  * pre_planning:
@@ -400,10 +395,15 @@ private:
  * -  {name: first_post_planning_name, type: first_post_planning_type}
  * -  {name: second_post_planning_name, type: second_post_planning_type}
  *
+ * # define the default values for the groups
+ * pre_planning_default_value: true
+ * planning_default_value: false
+ * post_planning_default_value: true
+ *
  * @endcode
  *
  */
-struct GlobalPlannerPipeline : public BaseGlobalPlanner, public CostmapPlanner {
+struct GppPlugin : public BaseGlobalPlanner, public CostmapPlanner {
   // define our interface types
   using Pose = geometry_msgs::PoseStamped;
   using Path = std::vector<Pose>;
@@ -427,7 +427,7 @@ struct GlobalPlannerPipeline : public BaseGlobalPlanner, public CostmapPlanner {
 
 private:
   bool
-  prePlanning(Pose& _start, Pose& _goal, double _tolerance);
+  prePlanning(Pose& _start, Pose& _goal);
 
   bool
   postPlanning(Path& _path, double& _cost);
@@ -436,7 +436,6 @@ private:
   globalPlanning(const Pose& _start, const Pose& _goal, Path& _plan,
                  double& _cost);
 
-  double tolerance_;
   std::atomic_bool cancel_;
 
   // nav_core conforming members

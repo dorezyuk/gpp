@@ -1,11 +1,11 @@
 <library path="lib/libgpp_plugin">
-    <class type="gpp_plugin::GlobalPlannerPipeline"
+    <class type="gpp_plugin::GppPlugin"
            base_class_type="nav_core::BaseGlobalPlanner">
         <description>
             pipeline for global-planners
         </description>
     </class>
-    <class type="gpp_plugin::GlobalPlannerPipeline"
+    <class type="gpp_plugin::GppPlugin"
         base_class_type="mbf_costmap_core::CostmapPlanner">
         <description>
             pipeline for global-planners

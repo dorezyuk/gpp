@@ -8,7 +8,7 @@ TEST(LoadPlugin, NavCore) {
 
   // load the plugin
   auto plugin =
-      loader.createInstance("gpp_plugin::GlobalPlannerPipeline");
+      loader.createInstance("gpp_plugin::GppPlugin");
 }
 
 // load the plugin with mbf interface
@@ -18,7 +18,7 @@ TEST(LoadPlugin, MbfCostmapCore) {
 
   // load the plugin
   auto plugin =
-      loader.createInstance("gpp_plugin::GlobalPlannerPipeline");
+      loader.createInstance("gpp_plugin::GppPlugin");
 }
 
 int

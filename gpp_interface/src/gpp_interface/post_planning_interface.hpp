@@ -59,8 +59,8 @@ struct PostPlanningInterface {
   postProcess(Path &_path, double &_cost) = 0;
 
   /**
-   * @param _name name of the resource
-   * @param _map costmap containing the data
+   * @param _name Name of the resource
+   * @param _map Map on which the planning problem will be preformed
    */
   virtual void
   initialize(const std::string &_name, Map *_map) = 0;

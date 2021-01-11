@@ -4,7 +4,7 @@ global_frame: map
 
 # Global planner parameters
 planners:
-  - {name: gpp_gp,        type: gpp_plugin::GlobalPlannerPipeline}
+  - {name: gpp_gp,        type: gpp_plugin::GppPlugin}
 
 gpp_gp:  
   planning:

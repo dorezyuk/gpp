@@ -51,11 +51,11 @@ namespace gpp_interface {
  * // dummy implementation
  * struct MyPrePlanning : public PrePlanningInterface{
  *  bool
- *  preProcess(Pose& _start, Pose& _goal, Map& _map, double _tolerance) override
+ *  preProcess(Pose& _start, Pose& _goal) override
  *  {}
  *
  *  void
- *  initialize(const std::string& _name) override {}
+ *  initialize(const std::string& _name, Map* _map) override {}
  * };
  *
  * // now create an instance
@@ -86,16 +86,18 @@ struct PrePlanningInterface {
   /**
    * @param _start Start pose for the planning problem
    * @param _goal Goal pose for the planning problem
-   * @param _map Map on which the planning problem will be preformed
-   * @param _tolerance tolerance for the goal pose
    *
    * @return true, if successful
    */
   virtual bool
-  preProcess(Pose& _start, Pose& _goal, Map& _map, double _tolerance) = 0;
+  preProcess(Pose& _start, Pose& _goal) = 0;
 
+  /**
+   * @param _name Name of the resource
+   * @param _map Map on which the planning problem will be preformed
+   */
   virtual void
-  initialize(const std::string& _name) = 0;
+  initialize(const std::string& _name, Map* _map) = 0;
 };
 
 }  // namespace gpp_interface
