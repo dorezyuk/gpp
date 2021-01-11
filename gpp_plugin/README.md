@@ -1,134 +1,94 @@
 # GppPlugin
 
-## API
+As you may already know (see the [concept](../README.md#concept)), we call all plugins loaded by the GppPlugin as its *child-plugins* and group those child-plugins in three *groups* (pre-, global-, and post-planning groups).
 
-### Parameters
+Now its time to understand how each group is executed.
 
-The `gpp_plugin` follows the well known ros-syntax for defining and loading pluginlib-based plugins.
-The user can define three plugin-groups under the tags `pre_planning`, `planning` and `post_planning`.
+```python
+for plugin in plugins:
+    success = plugin.run()
+    if(!success && plugin.on_failure_break):
+        return False
+    elif(success && plugin.on_success_break):
+        return True
+return default_value
+```
 
-Every group must be defined as a list.
-The execution order with a plugin-group is defined by the order in the list.
+Above is a pythonic pseudo-code, showing the loop for each plugin-group.
+The "plugin" above has three attributes - the method `run` in line 2, which is just pseudo-code for executing the plugin.
+Additionally it has the members `on_success_break` and `on_failure_break` (lines 3 and 5).
+These members are specific to every child-plugin and allow you to customize the behaviour of your pipeline.
+You may have "optional" child-plugins or might be satisfied if only one child-plugins returns a successful result.   
+Finally there is a third unknown value: `default_value` at the last line.
+This boolean value allows you to specify for each group what should happen, if the for-loop runs through without "preemptive" termination.
 
-Every list element must be a dictionary with the tags `name` and `type`.
-Both tags must have string values.
-The `name` can be chosen freely and will be passed to the plugin (allowing the user to define parameters).
-The `type` must be resolvable to a valid plugin.
+## Behavior-Tree-Relation
 
-Additionally the user may define `on_failure_break` and `on_success_break` tags.
-Those tags must have boolean values.
-`on_failure_break` defaults to true, `on_success_break` defaults to false.
+You may set all the `on_failure_break`, `on_success_break` and `default_value` freely.
+Nonetheless, it's maybe important to highlight that you can implement sequence and selector nodes known from [behavior-trees](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control)) with the mentioned parameters.
 
-Finally, every group has a default value.
-This value is used if no break condition (`on_success_break` or `on_failure_break`) is activated.
+If all child-plugins within one group have `on_success_break` set to true, `on_failure_break`. set to false and the `default_value` set to true, you will get a sequence-node.
+If you invert the values, the group will behave as a selector-node.
+
+<center>
+
+| flag             | sequence | selector |
+|------------------|----------|----------|
+| on_failure_break | true     | false    |
+| on_success_break | false    | true     |
+| default_value    | true     | false    |
+
+</center>
+
+## Parameters
+
+Now its time to look at how to define and load child-plugins and groups.
+The groups begin with the tags `pre_planning`, `planning` and `post_planning`.
+The child-plugins for those groups must be defined as a list.
+The execution order within this list defines laster on the order of the execution.
+Every child-plugin in these lists must have a `type` and `name` tag.
+Additionally you can pass boolean `on_failure_break` and `on_success_break`.
+Finally you may provide a boolean `default_value` for each group.
+
+Below an example
+
+```yaml
+pre_planning:
+    - {name: foo, type: bar, on_failure_break: True, on_success_break: False}
+    - {name: baz, type: bum, on_failure_break: True, on_success_break: False}
+
+    default_value: True
+```
+
+We load in our pre-planning group two child-plugins with the names foo and baz.
+The `on_failure_break`, `on_success_break` and `default_value` are chosen such that the groups acts as a sequence node.
 
 Below the detailed documentation.
+The `<pre_planning|planning|post_planning>` tag means here, that you can define the parameter under each of those groups.
 
-#### ~\<name>\/pre_planning (list)
-
-List, as defined above.
-The `type` must be resolvable to a plugin implementing the `gpp_interface::PrePlanningInterface`.
-
-This parameter is optional.
-
-#### ~\<name>\/planning (list)
+### ~\<name>\/<pre_planning|planning|post_planning> (list)
 
 List, as defined above.
-The `type` must be resolvable to a plugin implementing either `nav_core::BaseGlobalPlanner` or `mbf_costmap_core::CostmapPlanner`.
 
-This parameter is required and must define at least one valid global planner.
+### ~\<name>\/<pre_planning|planning|post_planning>\/name (string)
 
-#### ~\<name>\/post_planning (list)
+Name of the plugin. The name will be passed to the child-plugin.
 
-List, as defined above.
-The `type` must be resolvable to a plugin implementing the `gpp_interface::PostPlanningInterface`.
+### ~\<name>\/<pre_planning|planning|post_planning>\/type (string)
 
-This parameter is optional.
+Type of the plugin.
+For the pre_planning group it must be resolvable to a plugin implementing the `gpp_interface::PrePlanningInterface`.
+For the planning group must be resolvable to a plugin implementing either `nav_core::BaseGlobalPlanner` or `mbf_costmap_core::CostmapPlanner`.
+For the post_planning group it must be resolvable to a plugin implementing the `gpp_interface::PostPlanningInterface`.
 
-#### ~\<name>\/pre_planning_default_value (bool, true)
+### ~\<name>\/<pre_planning|planning|post_planning>\/on_failure_break (bool, true)
 
-Default outcome of the pre_planning group.
+Value defining if the group should break its execution if this child-plugin fails.
 
-#### ~\<name>\/planning_default_value (bool, true)
+### ~\<name>\/<pre_planning|planning|post_planning>\/on_succuss_break (bool, false)
 
-Default outcome of the planning group.
+Value defining if the group should break its execution if this child-plugin succeeds.
 
-#### ~\<name>\/post_planning_default_value (bool, true)
+### ~\<name>\/<pre_planning|planning|post_planning>\/default_value (bool, true)
 
-Default outcome of the post_planning group.
-
-#### ~\<name>\/tolerance (double, default: 0.1)
-
-Metric tolerance.
-This value will be used as tolerance for the pre-planning plugins, if the `gpp_plugin` is loaded as `nav_core::BaseGlobalPlanner`.
-If the `gpp_plugin` is loaded as `mbf_costmap_core::CostmapPlanner`, the tolerance passed to `makePlan` will have precedence.
-
-## Example
-
-Below two example configs for the `move_base` and `move_base_flex` frameworks.
-
-In the example we mark all pre-planning steps as "optional": we will ignore the failure and return success but default.
-The planning group is a selector-node from behavior-trees: we will pick the first successful plan.
-If no planner is successful, we return false (failure).
-The post-planing group is a sequence-node from behavior-trees: we want that all steps succeed and will abort the execution as soon as one child-plugin fails.
-Note, that the sequence-node is the default configuration.
-
-### MoveBase
-
-```yaml
-base_global_planner: "gpp_plugin::GlobalPlannerPipeline"
-
-# move-base will pass the type to the loaded plugin.
-GlobalPlannerPipeline:
-    # metric tolerance for the pre-planning step.
-    tolerance: 0.1
-
-    # define the pre-planning plugins
-    pre_planning:
-    -  {name: first_pre_planning_name, type: first_pre_planning_type, on_failure_break: false}
-    -  {name: second_pre_planning_name, type: second_pre_planning_type, on_failure_break: false}
-
-    # define the planning plugins
-    planning_default_value: false
-    planning:
-    -  {name: first_planning_name, type: first_planning_type, on_failure_break: false, on_success_break: true}
-    -  {name: second_planning_name, type: second_planning_type, on_failure_break: false, on_success_break: true}
-
-    # define the post-planning plugins
-    post_planning:
-    -  {name: first_post_planning_name, type: first_post_planning_type}
-    -  {name: second_post_planning_name, type: second_post_planning_type}
-
-```
-
-### MoveBaseFlex
-
-```yaml
-# your planner definition
-# we name our planner gpp
-planner:
-    - {name: gpp, type: gpp_plugin::GlobalPlannerPipeline}
-
-# now the specification for the gpp_plugin
-gpp:
-    # metric tolerance for the pre-planning step.
-    # it will be ignored if the plugin is loaded as mbf_costmap_core::CostmapPlanner.
-    tolerance: 0.1
-
-    # define the pre-planning plugins
-    pre_planning:
-    -  {name: first_pre_planning_name, type: first_pre_planning_type, on_failure_break: false}
-    -  {name: second_pre_planning_name, type: second_pre_planning_type, on_failure_break: false}
-
-    # define the planning plugins
-    planning_default_value: false
-    planning:
-    -  {name: first_planning_name, type: first_planning_type, on_failure_break: false, on_success_break: true}
-    -  {name: second_planning_name, type: second_planning_type, on_failure_break: false, on_success_break: true}
-
-    # define the post-planning plugins
-    post_planning:
-    -  {name: first_post_planning_name, type: first_post_planning_type}
-    -  {name: second_post_planning_name, type: second_post_planning_type}
-
-```
+Default outcome of the group.

@@ -373,17 +373,9 @@ private:
  * the tags `name` and `type` - following the standard ros syntax for
  * pluginlib-loaded plugins.
  *
- * You need to provide at least one plugin under the tag `planning`.
- *
- * If you are not using `move_base_flex`, you can also define a custom tolerance
- * under the parameter `tolerance` - defining the metric goal tolerance.
- *
  * Below is a code example
  *
  * @code{yaml}
- *
- * # goal tolerance in meters
- * tolerance: 0.1
  *
  * # define the pre-planning plugins
  * pre_planning:
@@ -427,7 +419,7 @@ struct GlobalPlannerPipeline : public BaseGlobalPlanner, public CostmapPlanner {
 
 private:
   bool
-  prePlanning(Pose& _start, Pose& _goal, double _tolerance);
+  prePlanning(Pose& _start, Pose& _goal);
 
   bool
   postPlanning(Path& _path, double& _cost);
@@ -436,7 +428,6 @@ private:
   globalPlanning(const Pose& _start, const Pose& _goal, Path& _plan,
                  double& _cost);
 
-  double tolerance_;
   std::atomic_bool cancel_;
 
   // nav_core conforming members

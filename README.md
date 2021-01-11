@@ -1,94 +1,44 @@
 # GlobalPlannerPipeline
 
-The GlobalPlannerPipeline (gpp) is a [pluginlib](http://wiki.ros.org/pluginlib) based framework aiming to extend the default functionality of ros-based planners, implementing either the [nav_core::BaseGlobalPlanner](http://wiki.ros.org/nav_core?distro=noetic#BaseGlobalPlanner_C.2B-.2B-_API) or [mbf_costmap_core::CostmapPlanner](https://github.com/magazino/move_base_flex/blob/master/mbf_costmap_core/include/mbf_costmap_core/costmap_planner.h) interfaces.
+The GlobalPlannerPipeline (gpp) is a [pluginlib](http://wiki.ros.org/pluginlib) based "pipeline" for global planning within the [ros-navigation](https://github.com/ros-planning/navigation)-stack.
 
-## Overview
+## Core Features
 
-This project has two major components: [gpp_interface](gpp_interface) and [gpp_plugin](gpp_plugin).
+The library allows you to
+- pre-process the inputs for your global planners,
+- chain multiple global planners together,
+- post-process the output form the global planners.
 
-The first part (`gpp_interface`) defines two new plugin-types:
-`gpp_interface::PrePlanningInterface` and`gpp_interface::PostPlanningInterface`.
-These plugins allow the user to separate common "auxiliary" functions from the planner implementation and reuse those.
+The goal is to separate auxiliary functions from the implementation of the global planners.
+Additionally the library allows you to create a "planner-chain" - a feature successfully used in the [moveit](https://moveit.ros.org/) framework.
 
-The second part (`gpp_plugin`)` offers a [move_base](http://wiki.ros.org/move_base) and [move_base_flex](http://wiki.ros.org/move_base_flex) compatible global planner plugin.
-This plugin implements the "pipeline" itself.
-It will load and run an arbitrary number of pre-planning, planning and post-planning plugins.
+The project consists of two components.
+The [gpp_interface](gpp_interface) defines two additional plugin-types: [PrePlanning](#preplanning) and [PostPlanning](#postplanning) plugins.
+The [gpp_plugin](gpp_plugin) implements the pipeline which will load and run these pre- and post-planning plugins together with global-planner plugins.
 
-## GppPlugin
+## Concept
+Before going into the details how to use and configure this library, we will first define some terminology.
+
+Since the naming may be already confusing (plugins, plugins, plugins), we will refer to the plugins loaded by the GppPlugin as its *child-plugins*.   
+Those child-plugins are *grouped* together accordingly to their interfaces.
+The pre-planning group contains child-plugins implementing the [gpp_interface::PrePlanningInterface](gpp_interface/src/gpp_interface/pre_planning_interface.hpp);
+The post-planning group contains child-plugins implementing the [gpp_interface::PostPlanningInterface](gpp_interface/src/gpp_interface/post_planning_interface.hpp);
+The planning group accepts child-plugins implementing  either the [nav_core::BaseGlobalPlanner](http://wiki.ros.org/nav_core?distro=noetic#BaseGlobalPlanner_C.2B-.2B-_API) or [mbf_costmap_core::CostmapPlanner](https://github.com/magazino/move_base_flex/blob/master/mbf_costmap_core/include/mbf_costmap_core/costmap_planner.h) interfaces.
 
 ![image](docs/schematic.svg)
 
-The image above illustrates the "pipeline" concept.
-The `gpp_plugin` has loads three *groups* of child-plugins: the pre-planning, planning and post-planning group.
-Every group may contain an arbitrary number of child-plugins.
+The pipeline concept is illustrated above.
+When calling `GppPlugin::makePlan`, the GppPlugin will invoke its child-plugins.
+The execution of those child-plugins is sequentially, going from the pre- over the planning- to the post-planning group.
+The result from each child-plugin is passed on the the next.
 
-On calling `makePlan`, the `gpp_plugin` firstly runs the pre-planning group.
-The child-plugins within this group implement the `gpp_interface::PrePlanningInterface`.
-Those plugins may modify the input-parameters (start and goal poses and costmap).
-
-The modified input-parameters are then passed to the planning group.
-The child-plugins within this group implement either the `nav_core::BaseGlobalPlanner` or the `mbf_costmap_core::CostmapPlanner` interface.
-The user may define an arbitrary number of planning plugins - but must provide at least one.
-The `gpp_plugin` will invoke all planning child-plugins, passing the generated path and cost from one planner to its successor.
-This allows to create a "planner-chain" - a feature successfully used in the [moveit](https://moveit.ros.org/) framework.
-
-Finally, the output from the planning group is passed to the post-planning group.
-The child-plugins within this group implement the `gpp_interface::PostPlanningInterface`.
-Every post-planning plugin may modify the generated path and cost.
-Here, the user may implement post-processing steps, like path-smoothing or additional checks.
-
-The `gpp_plugin` allows you also to customize what happens when a child-plugin finishes.
-Every child-plugin has boolean `on_failure_break` and `on_success_break` flags.
-- If a child-plugin fails and `on_failure_break` is set to true, the `gpp_plugin` fails.
-- If a child-plugin fails and `on_failure_break` is set to false, its failure is ignored and the execution continues with the next plugin.
-- If a child-plugin succeeds and `on_success_break` is set to true, the `gpp_plugin` continues with the next **group**
-- If a child-plugin succeeds and `on_success_break` is set to false, the `gpp_plugin` continues with the next **plugin**
-
-Additionally you may specify the default value for every group.
-This value is returned if no "break" condition is triggered (`on_success_break` or `on_failure_break`).
-
-### Behavior-Tree-Relation
-
-You may set all the `on_failure_break`, `on_success_break` and default_values freely.
-Nonetheless, it's maybe important to highlight that you can implement sequence and selector nodes known from [behavior-trees](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control)) with the mentioned parameters.
-
-This works if all child-plugins within one group have the same values for `on_success_break` and `on_failure_break`.
-The table below shows which values result in which behavior-tree node.
-
-| flag             | sequence | selector |
-|------------------|----------|----------|
-| on_failure_break | true     | false    |
-| on_success_break | false    | true     |
-| default_value    | true     | false    |
-
-## PrePlanning
-
-The pre-planning plugins should modify the input to the planning plugins.
-The pre-planning plugins are allowed to
-- alter the start and goal poses,
-- alter the costmap.
-
-This allows the user to implement for example a common tolerance function for all planners, or to update the global_costmap only when required.
-
-## PostPlanning
-
-The post-planning plugins should modify the output of the planning plugins.
-The post-planning plugins are allowed to
-- alter the path,
-- alter the cost.
-
-Here, the user may implement common post-processing steps like
-- path-pruning or densifying,
-- trajectory smoothing,
-- trajectory oscillation checks,
-- feasibility checks
+Readon what you can do with the two [additional interfaces](gpp_interface/README.md), or how to configure the [GppPlugin](gpp_plugin/README.md).
 
 ## Build
 
 The build-step is very similar to the standard ros-packages:
 ```
-cd catkin_ws/src
+cd ~catkin_ws/src
 git clone https://github.com/dorezyuk/gpp.git
-cd gpp/gpp_plugin
-catkin build --this
+catkin build gpp_plugin
 ```
