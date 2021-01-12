@@ -1,8 +1,8 @@
-<library path="lib/libgpp_update_map">
-    <class type="gpp_update_map::GppUpdateMap"
-           base_class_type="gpp_interface::PrePlanningInterface">
+<library path="lib/libgpp_prune_path">
+    <class type="gpp_prune_path::GppPrunePath"
+           base_class_type="gpp_interface::PostPlanningInterface">
         <description>
-        	Will refresh the costmap before starting the planner
+        	Will prune the given path.
         </description>
     </class>
 </library>    

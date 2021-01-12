@@ -51,12 +51,16 @@ struct PostPlanningInterface {
   virtual ~PostPlanningInterface() = default;
 
   /**
-   * @param _path output from a global planner
+   * @param[in] _start start pose for the planning
+   * @param[in] _goal goal pose for the planning
+   * @param[out] _path path as output from a global planner
+   * @param[out] _cost cost as output from a global planner
    *
    * @return true, if successful
    */
   virtual bool
-  postProcess(Path &_path, double &_cost) = 0;
+  postProcess(const Pose &_start, const Pose &_goal, Path &_path,
+              double &_cost) = 0;
 
   /**
    * @param _name Name of the resource

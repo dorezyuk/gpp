@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(gpp_update_map)
+project(gpp_prune_path)
 
 set(catkin_PACKAGES gpp_interface pluginlib)
 find_package(catkin REQUIRED COMPONENTS ${catkin_PACKAGES})
@@ -10,7 +10,7 @@ catkin_package(
  CATKIN_DEPENDS ${catkin_PACKAGES}
 )
 
-add_library(${PROJECT_NAME} src/gpp_update_map.cpp)
+add_library(${PROJECT_NAME} src/gpp_prune_path.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC src ${catkin_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
@@ -35,6 +35,8 @@ install(FILES plugin.xml
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
-  catkin_add_gtest(${PROJECT_NAME}_test test/load_plugin.cpp)
+  # gtests
+  catkin_add_gtest(${PROJECT_NAME}_test test/prune.cpp)
+  target_include_directories(${PROJECT_NAME}_test PRIVATE src)
   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
 endif()

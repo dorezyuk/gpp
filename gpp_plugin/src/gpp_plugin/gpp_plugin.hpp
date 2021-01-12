@@ -430,7 +430,8 @@ private:
   prePlanning(Pose& _start, Pose& _goal);
 
   bool
-  postPlanning(Path& _path, double& _cost);
+  postPlanning(const Pose& _start, const Pose& _goal, Path& _path,
+               double& _cost);
 
   bool
   globalPlanning(const Pose& _start, const Pose& _goal, Path& _plan,
