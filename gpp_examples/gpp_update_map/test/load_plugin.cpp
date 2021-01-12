@@ -7,8 +7,7 @@ TEST(LoadPlugin, generic) {
       "gpp_interface", "gpp_interface::PrePlanningInterface");
 
   // load the plugin
-  auto plugin =
-      loader.createInstance("gpp_update_map::GppUpdateMap");
+  auto plugin = loader.createInstance("gpp_update_map::GppUpdateMap");
 }
 
 int

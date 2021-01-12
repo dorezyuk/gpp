@@ -1,8 +1,7 @@
 <library path="lib/libgpp_update_map">
-    <class type="gpp_update_map::GppUpdateMap"
-           base_class_type="gpp_interface::PrePlanningInterface">
+    <class type="gpp_update_map::GppUpdateMap" base_class_type="gpp_interface::PrePlanningInterface">
         <description>
         	Will refresh the costmap before starting the planner
         </description>
     </class>
-</library>    
+</library>
