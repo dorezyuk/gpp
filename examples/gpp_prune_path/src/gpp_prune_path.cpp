@@ -22,30 +22,40 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include <gpp_prune_path/gpp_prune_path.hpp>
 
-#include <gpp_interface/pre_planning_interface.hpp>
+#include <pluginlib/class_list_macros.hpp>
 
-namespace gpp_update_map {
+namespace gpp_prune_path {
 
-// short-cut
-using gpp_interface::PrePlanningInterface;
+bool
+GppPrunePath::postProcess(const Pose &_start, const Pose &_goal, Path &_path,
+                          double &_cost) {
+  // start and goal arguments are not really required here.
+  // this class is a noop, if the defined step is less than 2
+  if (step_ < 2)
+    return true;
 
-/**
- * @brief Class will call updateMap on the passed map.
- *
- * This allows the user to stop ticked-based re-rendering of the costmap.
- * See README.md for the inteface documentation.
- */
-struct GppUpdateMap : public PrePlanningInterface {
-  bool
-  preProcess(Pose& _start, Pose& _goal) override;
+  // in order to prune the path, we need at least three poses - since we dont
+  // want to change the start and goal pose.
+  if (_path.size() < 2)
+    return false;
 
-  void
-  initialize(const std::string& _name, Map* _map) override;
+  auto end = internal::prune(_path.begin(), _path.end(), step_);
+  _path.erase(end, _path.end());
 
-private:
-  Map* map_ = nullptr;
-};
+  return true;
+}
 
-}  // namespace gpp_update_map
+void
+GppPrunePath::initialize(const std::string &_name, Map *_map) {
+  // load the config
+  ros::NodeHandle nh("~/" + _name);
+
+  step_ = nh.param("step", 2);
+}
+}  // namespace gpp_prune_path
+
+// register the plugin
+PLUGINLIB_EXPORT_CLASS(gpp_prune_path::GppPrunePath,
+                       gpp_interface::PostPlanningInterface);

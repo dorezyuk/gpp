@@ -28,19 +28,26 @@ namespace {
 
 /// @brief parameter for the test
 struct param {
-  param(size_t _size, const std::vector<int>& _d) : size(_size), expected(_d) {}
+  param(size_t _size, size_t _skip, const std::vector<int>& _d) :
+      size(_size), step(_skip), expected(_d) {}
   size_t size;                ///< size of the iota-filled vector
+  size_t step;                ///< the stride for the test
   std::vector<int> expected;  ///< expected outcome
 };
 
 /// @brief fixture for the test
 struct fixture : public testing::TestWithParam<param> {};
 
-INSTANTIATE_TEST_SUITE_P(prune, fixture,
-                         testing::Values(param(4, {0, 3}), param(5, {0, 3, 4}),
-                                         param(10, {0, 3, 6, 9}),
-                                         param(11, {0, 3, 6, 9, 10}),
-                                         param(12, {0, 3, 6, 9, 11})));
+INSTANTIATE_TEST_SUITE_P(
+    prune, fixture,
+    testing::Values(
+        // tests with 2 as step
+        param(3, 2, {0, 2}), param(4, 2, {0, 2, 3}),
+        // tests with 3 as step
+        param(4, 3, {0, 3}), param(5, 3, {0, 3, 4}), param(10, 3, {0, 3, 6, 9}),
+        param(11, 3, {0, 3, 6, 9, 10}), param(12, 3, {0, 3, 6, 9, 11}),
+        // tests with 4 as step
+        param(3, 4, {0, 2}), param(5, 4, {0, 4}), param(6, 4, {0, 4, 5})));
 
 TEST_P(fixture, regression) {
   // get the parameter
@@ -51,8 +58,7 @@ TEST_P(fixture, regression) {
   std::iota(d.begin(), d.end(), 0);
 
   // run our test with the skip size 3
-  const int step = 3;
-  const auto end = prune(d.begin(), d.end(), step);
+  const auto end = prune(d.begin(), d.end(), p.step);
 
   // check first the size
   ASSERT_EQ(p.expected.size(), std::distance(d.begin(), end));

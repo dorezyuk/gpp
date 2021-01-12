@@ -1,8 +1,7 @@
 <library path="lib/libgpp_prune_path">
-    <class type="gpp_prune_path::GppPrunePath"
-           base_class_type="gpp_interface::PostPlanningInterface">
+    <class type="gpp_prune_path::GppPrunePath" base_class_type="gpp_interface::PostPlanningInterface">
         <description>
         	Will prune the given path.
         </description>
     </class>
-</library>    
+</library>

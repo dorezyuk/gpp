@@ -33,6 +33,7 @@ The execution of those child-plugins is sequentially, going from the pre- over t
 The result from each child-plugin is passed on the the next.
 
 Read on what you can do with the two [additional interfaces](gpp_interface/README.md), or how to configure the [GppPlugin](gpp_plugin/README.md).
+Additionally have a look at the two example-plugins: [GppUpdateMap](examples/gpp_update_map) and [GppPrunePath](examples/gpp_prune_path).
 
 ## Build
 

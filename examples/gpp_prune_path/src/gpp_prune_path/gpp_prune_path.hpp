@@ -60,15 +60,17 @@ namespace internal {
  * @tparam _Iter random access iterator
  * @param _begin begin of the sequence
  * @param _end end of the sequence
- * @param _skip positive integer for skipping
+ * @param _step positive integer for skipping
  * @returns the end iterator of the pruned sequence
  */
 template <typename _Iter>
 _Iter
-prune(_Iter _begin, _Iter _end, size_t _skip) {
+prune(_Iter _begin, _Iter _end, size_t _step) {
+  if (_step < 2)
+    return _end;
   // find the distance between _begin and end
   // we substract 1 because we dont count begin...
-  const auto distance = std::distance(_begin, _end) - 1;
+  const auto distance = std::distance(_begin, _end);
 
   // we prune such that we always include the first and last element of the
   // sequence. if the distance is less than three, we cannot prune.
@@ -78,16 +80,15 @@ prune(_Iter _begin, _Iter _end, size_t _skip) {
   // find the end of our source.
   // note: we denote the source (s) as the iterator from where we are copying
   // data; the destination is denoted with (d).
-  const _Iter d_end = _begin + distance / _skip + 1;
+  const _Iter d_end = _begin + (distance + _step - 2) / _step;
 
   // inplace pruning.
   // note: don't use std::move, as it doesn't work for ros-msgs...
-  for (_Iter s_begin = _begin; _begin != d_end; ++_begin, s_begin += _skip)
+  for (_Iter s_begin = _begin; _begin != d_end; ++_begin, s_begin += _step)
     *_begin = *s_begin;
 
   // last element must be updated separatelly:
-  if ((distance % _skip) != 0)
-    *_begin++ = *std::prev(_end);
+  *_begin++ = *std::prev(_end);
 
   return _begin;
 }
@@ -97,7 +98,16 @@ prune(_Iter _begin, _Iter _end, size_t _skip) {
 using gpp_interface::PostPlanningInterface;
 
 /**
- * @brief post-processing class which will prune the given path
+ * @brief post-processing class which will prune the given path.
+ *
+ * You can configure the skip-step via the ros-parameter "~/step".
+ * Its value defaults to 2. Negative values will deactivate this plugin -
+ * calling GppPrunePath::postProcess will be a noop and directly return true.
+ *
+ * The plugin fails, if the given path has less than 2 elements.
+ * It succeeds in all other cases.
+ *
+ * See the README.md for futher details.
  */
 struct GppPrunePath : public PostPlanningInterface {
   bool
@@ -108,7 +118,7 @@ struct GppPrunePath : public PostPlanningInterface {
   initialize(const std::string &_name, Map *_map) override;
 
 private:
-  int skip_ = 0;
+  int step_ = 0;
 };
 
 }  // namespace gpp_prune_path
