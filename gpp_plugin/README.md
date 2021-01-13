@@ -119,8 +119,8 @@ gpp_plugin:
     planning_default_value: False
     # finally the pose_planning group: we say that the post_planner_name1 is required,
     # the post_planner_name2 is optional.
-    planning:
+    post_planning:
         - {name: post_planner_name1, type: post_planner_type1, on_failure_break: true}
         - {name: post_planner_name2, type: post_planner_type2, on_failure_break: false}
-    planning_default_value: True
+    pose_planning_default_value: True
 ```

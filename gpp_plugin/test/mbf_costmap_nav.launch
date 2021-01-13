@@ -3,8 +3,11 @@
   <!-- provide fake localization for the test -->
   <node pkg="tf" type="static_transform_publisher" name="fake_localization" args="0 0 0 0 0 0 map base_link 10"/>
 
+  <!-- disable spam from move-base-flex -->
+  <env name="ROSCONSOLE_CONFIG_FILE" value="$(find gpp_plugin)/test/mbf_costmap_nav.conf"/>
+
   <!-- launch mbf-costmap-nav-->
-  <node pkg="mbf_costmap_nav" type="mbf_costmap_nav" name="move_base">
+  <node pkg="mbf_costmap_nav" type="mbf_costmap_nav" name="move_base_flex">
     <rosparam file="$(find gpp_plugin)/test/mbf_costmap_nav.yaml" command="load"/>
   </node>
 

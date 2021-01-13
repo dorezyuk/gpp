@@ -229,9 +229,10 @@ GppPlugin::prePlanning(Pose& _start, Pose& _goal) {
 }
 
 bool
-GppPlugin::postPlanning(Path& _path, double& _cost) {
+GppPlugin::postPlanning(const Pose& _start, const Pose& _goal, Path& _path,
+                        double& _cost) {
   auto post_planning = [&](PostPlanningInterface& _plugin) {
-    return _plugin.postProcess(_path, _cost);
+    return _plugin.postProcess(_start, _goal, _path, _cost);
   };
   return runPlugins(post_planning_, post_planning, cancel_);
 }
@@ -279,7 +280,7 @@ GppPlugin::makePlan(const Pose& _start, const Pose& _goal,
     return MBF_FAILURE;
 
   // post-planning
-  if (!postPlanning(_plan, _cost))
+  if (!postPlanning(start, goal, _plan, _cost))
     return MBF_FAILURE;
 
   return MBF_SUCCESS;

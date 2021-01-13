@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gpp_update_map</name>
+  <version>0.0.0</version>
+  <description>The gpp_update_map plugin will update the map before running the global planner</description>
+
+  <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gpp_interface</depend>
+  <depend>pluginlib</depend>
+
+  <export>
+      <gpp_interface plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>

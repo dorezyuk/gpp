@@ -14,4 +14,3 @@ plugins:
   - {name: planner7, type: global_planner/GlobalPlanner} # a final valid plugin
 
 not_an_array: "really bad"
-

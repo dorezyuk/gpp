@@ -22,7 +22,7 @@ class TestMbfCostmapNav(unittest.TestCase):
         for reference.
         """
         # setup the client
-        get_path = SimpleActionClient('move_base/get_path', GetPathAction)
+        get_path = SimpleActionClient('move_base_flex/get_path', GetPathAction)
         self.assertTrue(get_path.wait_for_server(rospy.Duration(60)),
                         "{} server offline".format(get_path.action_client.ns))
 

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gpp_prune_path</name>
+  <version>0.0.0</version>
+  <description>The gpp_prune_path plugin will prune the path produced by a global-planner</description>
+
+  <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gpp_interface</depend>
+  <depend>pluginlib</depend>
+
+  <test_depend>rostest</test_depend>
+
+  <export>
+      <gpp_interface plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>
