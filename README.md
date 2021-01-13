@@ -45,4 +45,4 @@ catkin build gpp_plugin
 ```
 
 ## CI-Status
-https://github.com/dorezyuk/gpp/workflows/Noetic%20CI/badge.svg
+![build-status](https://github.com/dorezyuk/gpp/workflows/Noetic%20CI/badge.svg)
