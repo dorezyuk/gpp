@@ -43,3 +43,6 @@ cd ~catkin_ws/src
 git clone https://github.com/dorezyuk/gpp.git
 catkin build gpp_plugin
 ```
+
+## CI-Status
+![build-status](https://github.com/dorezyuk/gpp/workflows/Noetic%20CI/badge.svg)
