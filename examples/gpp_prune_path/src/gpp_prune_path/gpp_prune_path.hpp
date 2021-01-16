@@ -69,7 +69,6 @@ prune(_Iter _begin, _Iter _end, size_t _step) {
   if (_step < 2)
     return _end;
   // find the distance between _begin and end
-  // we substract 1 because we dont count begin...
   const auto distance = std::distance(_begin, _end);
 
   // we prune such that we always include the first and last element of the
