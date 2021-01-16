@@ -179,7 +179,7 @@ protected:
  * @tparam _Plugin type of the plugin (PrePlanningInterface, etc)
  * @tparam _Functor functor taking the _Plugin-ref and returning true on success
  *
- * This function implements the main logic, how to map the result from plugins
+ * This function implements the main logic how to map the result from plugins
  * within a group to the group result.
  *
  * @param _grp a group of plugins
@@ -365,11 +365,15 @@ private:
  *
  * @section Parameters
  *
- * Define the pre_planning plugins under the tag `pre_planning`. Those plugins
- * must adhere to the `gpp_interface::PrePlanning` interface. Define planning
- * plugins under the tag `planning` and the post-planning plugins under the tag
- * `post_planning`. Those plugins must adhere to `nav_core::BaseGlobalPlanner`
- * and `gpp_interface::PostPlanning`, respectively.
+ * Define the pre_planning plugins under the tag `pre_planning`: those plugins
+ * must implement `gpp_interface::PrePlanningInterface`.
+ *
+ * Define planning plugins under the tag `planning`: those plugins must
+ * implement either `nav_core::BaseLocalPlanner` or
+ * 'mbf_costmap_core::CostmapPlanner`.
+ *
+ * Define post_planning plugins under tha tag `post_planning`: those plugins
+ * must implement `gpp_interface::PostPlanningInterface`.
  *
  * The plugins under every tag (`pre_planning`, `planning` or `post_planning`)
  * must be defined as an array. Every element withing the array must have

@@ -17,7 +17,7 @@ return default_value
 Above is a pythonic pseudo-code, showing the loop for each plugin-group.
 The "plugin" above has three attributes - the method `run` in line 2, which is just pseudo-code for executing the plugin.
 Additionally it has the members `on_success_break` and `on_failure_break` (lines 3 and 5).
-These members are specific to every child-plugin and allow you to customize the behaviour of your pipeline.
+These members are specific to every child-plugin and allow you to customize the behavior of your pipeline.
 You may have "optional" child-plugins or might be satisfied if only one child-plugins returns a successful result.   
 Finally there is a third unknown value: `default_value` at the last line.
 This boolean value allows you to specify for each group what should happen, if the for-loop runs through without "preemptive" termination.
@@ -45,7 +45,7 @@ If you invert the values, the group will behave as a selector-node.
 Now its time to look at how to define and load child-plugins and groups.
 The groups begin with the tags `pre_planning`, `planning` and `post_planning`.
 The child-plugins for those groups must be defined as a list.
-The execution order within this list defines laster on the order of the execution.
+The order within this list defines later on the order of the execution.
 Every child-plugin in these lists must have a `type` and `name` tag.
 Additionally you can pass boolean `on_failure_break` and `on_success_break`.
 Finally you may provide a boolean `default_value` for each group.

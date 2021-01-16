@@ -40,7 +40,7 @@ bool
 GppUpdateMap::preProcess(Pose& _start, Pose& _goal) {
   // just to be sure
   if (!map_) {
-    GPP_WARN("map_ cannot be nullptr: call first onInitialize");
+    GPP_WARN("map_ cannot be nullptr: call first initialize");
     return false;
   }
 

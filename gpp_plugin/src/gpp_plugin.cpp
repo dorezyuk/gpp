@@ -180,7 +180,7 @@ _default_deleter(BaseGlobalPlanner* impl) {
 
 pluginlib::UniquePtr<BaseGlobalPlanner>
 CostmapPlannerManager::createCustomInstance(const std::string& _type) {
-  // check if this type is know to us
+  // check if this type is known
   if (isClassAvailable(_type))
     return createUniqueInstance(_type);
 
@@ -240,7 +240,6 @@ GppPlugin::postPlanning(const Pose& _start, const Pose& _goal, Path& _path,
 bool
 GppPlugin::globalPlanning(const Pose& _start, const Pose& _goal, Path& _plan,
                           double& _cost) {
-  // run all global planners... typically only one should be loaded.
   auto planning = [&](BaseGlobalPlanner& _plugin) {
     return _plugin.makePlan(_start, _goal, _plan, _cost);
   };
