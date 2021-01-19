@@ -15,6 +15,7 @@
   <depend>costmap_2d</depend>
   <depend>gpp_interface</depend>
   <depend>mbf_costmap_core</depend>
+  <depend>mbf_msgs</depend>
   <depend>nav_core</depend>
   <depend>pluginlib</depend>
   <depend>xmlrpcpp</depend>

@@ -24,6 +24,7 @@
 
 #include <gpp_plugin/gpp_plugin.hpp>
 
+#include <mbf_msgs/GetPathResult.h>
 #include <pluginlib/class_list_macros.h>
 #include <xmlrpcpp/XmlRpcException.h>
 #include <xmlrpcpp/XmlRpcValue.h>
@@ -44,8 +45,8 @@ constexpr char gpp_name__[] = "[gpp]: ";
 #define GPP_FATAL(_msg) ROS_FATAL_STREAM(gpp_name__ << _msg)
 
 // outcome definition for mbf_costmap_core based plugins
-constexpr uint32_t MBF_SUCCESS = 0;
-constexpr uint32_t MBF_FAILURE = 50;
+constexpr uint32_t MBF_SUCCESS = mbf_msgs::GetPathResult::SUCCESS;
+constexpr uint32_t MBF_FAILURE = mbf_msgs::GetPathResult::FAILURE;
 
 /// @brief helper to get a string element with the tag _tag from _v
 /// @throw XmlRpc::XmlRpcException if the tag is missing
