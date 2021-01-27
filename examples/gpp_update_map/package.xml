@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>gpp_update_map</name>
-  <version>0.0.1</version>
+  <version>0.1.0</version>
   <description>The gpp_update_map plugin will update the map before running the global planner</description>
 
   <maintainer email="dmitrij.dorezyuk@hotmail.de">Dima Dorezyuk</maintainer>
