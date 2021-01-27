@@ -2,8 +2,8 @@
 Changelog for package gpp_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.1 (2021-01-27)
+------------------
 * use default values
 * use mbf-msgs for mbf related constants
 * update documentation
