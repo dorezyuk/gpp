@@ -126,8 +126,10 @@ ArrayPluginManager<_Plugin>::load(const std::string& _resource,
       // assemble the parameter struct
       PluginParameter param;
       param.name = name;
-      param.on_failure_break = _getElement(element, "on_failure_break", true);
-      param.on_success_break = _getElement(element, "on_success_break", false);
+      param.on_failure_break =
+          _getElement(element, "on_failure_break", param.on_failure_break);
+      param.on_success_break =
+          _getElement(element, "on_success_break", param.on_success_break);
       // this should not throw anymore
       PluginGroup<_Plugin>::plugins_.emplace_back(param, std::move(plugin));
 
