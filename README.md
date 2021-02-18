@@ -35,9 +35,15 @@ The result from each child-plugin is passed on the the next.
 Read on what you can do with the two [additional interfaces](gpp_interface), or how to configure the [GppPlugin](gpp_plugin).
 Additionally have a look at the two example-plugins: [GppUpdateMap](examples/gpp_update_map) and [GppPrunePath](examples/gpp_prune_path).
 
-## Build
+## Build or Install
 
-The build-step is very similar to the standard ros-packages:
+ROS-noetic users can install the packages via apt:
+```
+sudo apt udpate
+sudo apt install ros-noetic-gpp-interface ros-noetic-gpp-plugin
+```
+
+If you want to build the packages from source, then follow the standard-way for ros-packages and run:
 ```
 cd ~catkin_ws/src
 git clone https://github.com/dorezyuk/gpp.git
